@@ -1,0 +1,27 @@
+{
+  "spus": [
+    {
+      "spu": "ULCNP",
+      "name": "Notebook",
+      "aliases": ["notebook", "journal", "ej-7", "custom logo leather notebook"]
+    },
+    {
+      "spu": "",
+      "name": "Flower Pot (GF-10) — chọn SPU",
+      "aliases": ["gf-10", "flower pot", "tulip flower pot"]
+    },
+    {
+      "spu": "",
+      "name": "Jewelry Storage (JS-3) — chọn SPU",
+      "aliases": ["js-3", "jewelry box", "jewelry storage"]
+    }
+  ],
+  "sizeMappings": {
+    "GF-10": {
+      "4.5x4.5x2.7": "Large",
+      "2x2x3": "Small"
+    }
+  },
+  "colorMappings": {},
+  "variantMappings": {}
+}

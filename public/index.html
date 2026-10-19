@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Printbelle Order Desk</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">PRINTBELLE / ORDER DESK</p>
+          <h1>Prepare orders</h1>
+          <p class="lede">Read packing slips, match artwork, map variants, and review the payload before submitting.</p>
+        </div>
+        <div class="settings-header-actions"><div id="modeBadge" class="badge">Loading configuration…</div><a class="button secondary" href="/settings">Product settings ↗</a></div>
+      </header>
+
+      <section class="steps" aria-label="Progress">
+        <div class="step active"><span>01</span><div><strong>Input</strong><small>PDF + artwork</small></div></div>
+        <div class="step"><span>02</span><div><strong>Review</strong><small>SPU + sizes</small></div></div>
+        <div class="step"><span>03</span><div><strong>Submit</strong><small>Preview / API submit</small></div></div>
+      </section>
+
+      <section class="panel" id="inputPanel">
+        <div class="panel-heading"><div><p class="eyebrow">STEP 01</p><h2>Choose input files</h2></div><span class="hint">Artwork filenames should include the customer name</span></div>
+        <form id="uploadForm">
+          <div class="drop-grid">
+            <label class="dropzone" for="pdfInput"><input id="pdfInput" name="pdf" type="file" accept="application/pdf" required /><span class="drop-icon">PDF</span><strong id="pdfLabel">Choose input.pdf</strong><small>1 PDF packing slip</small></label>
+            <label class="dropzone" for="artworkInput"><input id="artworkInput" name="artworks" type="file" accept="image/png,image/jpeg,image/webp" multiple /><span class="drop-icon">IMG</span><strong id="artworkLabel">Choose artwork</strong><small>Multiple PNG/JPG/WebP files</small></label>
+          </div>
+          <button class="button primary" type="submit">Read orders <span>→</span></button>
+        </form>
+        <div id="parseStatus" class="status" role="status"></div>
+      </section>
+
+      <section class="panel hidden" id="reviewPanel">
+        <div class="panel-heading"><div><p class="eyebrow">STEP 02</p><h2>Review and mapping</h2></div><span class="hint">Fields with orange borders need attention</span></div>
+        <div id="ordersRoot"></div>
+        <div class="config-note"><strong>Need to edit SPUs or size mappings?</strong><a href="/settings">Open settings page ↗</a><small>Configuration is stored on the server and shared across browsers.</small></div>
+        <div class="actions"><button class="button secondary" id="previewButton" type="button">Create payload preview</button><button class="button primary" id="submitButton" type="button">Submit selected orders <span>→</span></button></div>
+        <div id="reviewStatus" class="status" role="status"></div>
+      </section>
+
+      <section class="panel hidden" id="previewPanel">
+        <div class="panel-heading"><div><p class="eyebrow">STEP 03</p><h2>Payload to submit</h2></div><span class="hint">Review before submitting</span></div>
+        <div id="previewRoot"></div>
+        <div class="confirm-row"><label><input id="confirmInput" type="checkbox" /> I have reviewed the SPU, size, artwork, and address.</label><div class="button-group"><button class="button secondary" id="exportImportButton" type="button">Export import Excel</button><button class="button primary" id="confirmSubmitButton" type="button">Confirm submission</button></div></div>
+        <div id="submitStatus" class="status" role="status"></div>
+        <div id="exportStatus" class="status" role="status"></div>
+        <div id="submitResults" class="submit-results"></div>
+      </section>
+
+      <footer><span>Railway-ready · Node 20 · Separate API adapter</span><a href="https://documenter.getpostman.com/view/25923095/2s93RL1vvB" target="_blank" rel="noreferrer">Printbelle API docs ↗</a></footer>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
