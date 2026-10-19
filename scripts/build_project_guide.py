@@ -334,9 +334,9 @@ def build():
     ], widths=[2.15, 1.05, 3.45])
 
     add_heading(doc, "6 Mapping SPU và kích cỡ")
-    add_body(doc, "Không cần chỉnh JSON thủ công. Mở trang /settings hoặc bấm Cấu hình SPU trên trang chính. Danh mục sản phẩm dùng để thêm tên hiển thị, mã SPU, SKU prefix và các alias trong PDF; phần Ánh xạ kích cỡ dùng để chuyển kích thước trong PDF sang giá trị menu/variant của Printbelle.")
+    add_body(doc, "Không cần chỉnh JSON thủ công. Mở trang /settings hoặc bấm Cấu hình SPU trên trang chính. Danh mục sản phẩm dùng để thêm tên hiển thị, mã SPU, SKU prefix và các alias trong PDF; phần Ánh xạ kích cỡ dùng để chuyển kích thước trong PDF sang giá trị menu/variant của Printbelle. Size mapping có thể dùng SKU prefix hoặc product code đầy đủ.")
     add_bullet(doc, "Bấm + Thêm SPU, nhập tên, mã SPU, SKU prefix và các từ khóa ngăn cách bằng dấu phẩy. Prefix GF sẽ khớp GF-10, GF-20… và cùng trỏ về một SPU.")
-    add_bullet(doc, "Bấm + Thêm sản phẩm trong phần Ánh xạ kích cỡ, nhập mã sản phẩm trong PDF rồi thêm các cặp kích thước nguồn và kích thước Printbelle.")
+    add_bullet(doc, "Bấm + Thêm sản phẩm trong phần Ánh xạ kích cỡ, nhập SKU prefix hoặc mã sản phẩm trong PDF rồi thêm các cặp kích thước nguồn và kích thước Printbelle. Ví dụ prefix GF áp dụng cho GF-10, GF-20…; mã đầy đủ chỉ áp dụng cho SKU đó.")
     add_bullet(doc, "Bấm Lưu cấu hình để ghi lên server. Các trình duyệt khác mở cùng app sẽ dùng chung cấu hình.")
     add_bullet(doc, "data/catalog.json chỉ là cấu hình mặc định/fallback khi server chưa có file cấu hình riêng.")
     add_body(doc, "Nếu Printbelle yêu cầu productCode cụ thể, variantMappings vẫn là nhóm nâng cao trong file cấu hình. Key có thể dùng dạng PRODUCT|SIZE|COLOR. Với SPU và size, sau khi bấm Lưu cấu hình không cần restart server.")

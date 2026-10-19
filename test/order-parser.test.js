@@ -36,6 +36,13 @@ test("maps SKU prefixes to the same SPU", () => {
   assert.equal(payloads[0].payload.items[0].productSpu, "UFP");
 });
 
+test("maps sizes by SKU prefix", () => {
+  const order = { orderNumber: "PB-SIZE-PREFIX", items: [{ productCodeSource: "GF-20", title: "Flower Pot", quantity: 1, sizeRaw: '2"x2"x3' }], artworks: [{ urlPath: "/flower.png" }] };
+  const payloads = buildAllPayloads([order], { ...sampleCatalog, sizeMappings: { GF: { "2x2x3": "Small" } }, spus: [{ spu: "UFP", name: "Flower Pot", skuPrefixes: ["GF"] }] }, "http://localhost:3000");
+  assert.equal(payloads[0].payload.items[0].size, "Small");
+  assert.equal(payloads[0].skipped, false);
+});
+
 test("parses Jewelry Storage color and personalization", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Jewelry Storage/input.pdf"));
   const [order] = await parseOrders(pdf, []);

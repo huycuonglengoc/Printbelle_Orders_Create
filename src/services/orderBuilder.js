@@ -17,8 +17,21 @@ function findSpu(item, catalog) {
 }
 
 function rulesForProduct(rules, productCode) {
-  const entry = Object.entries(rules || {}).find(([key]) => normalizeKey(key) === normalizeKey(productCode));
-  return entry?.[1] || {};
+  const normalizedProductCode = normalizeKey(productCode);
+  const entries = Object.entries(rules || {});
+  const exact = entries.find(([key]) => normalizeKey(key) === normalizedProductCode);
+  if (exact) return exact[1] || {};
+
+  // Keep exact product-code mappings working, while allowing a prefix such as
+  // GF to cover GF-10, GF-20, and future SKU variants. Prefer the longest
+  // matching prefix when rules overlap (for example G and GF).
+  const prefix = entries
+    .filter(([key]) => {
+      const normalizedKey = normalizeKey(key);
+      return normalizedKey && normalizedProductCode.startsWith(normalizedKey);
+    })
+    .sort(([left], [right]) => normalizeKey(right).length - normalizeKey(left).length)[0];
+  return prefix?.[1] || {};
 }
 
 function mapSize(item, catalog) {

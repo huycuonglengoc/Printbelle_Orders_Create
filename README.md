@@ -18,7 +18,7 @@ Mở `http://localhost:3000`, chọn `input.pdf` và các file artwork trong cù
 Mở trang cấu hình riêng tại `http://localhost:3000/settings` hoặc bấm **Cấu hình SPU** trên trang chính. Không cần đọc PDF trước và không cần chỉnh JSON thủ công:
 
 - **Danh mục sản phẩm**: thêm tên hiển thị, mã SPU Printbelle, SKU prefix và các từ khóa xuất hiện trong PDF. Các giá trị ngăn cách bằng dấu phẩy và được dùng cho tự nhận diện. Ví dụ prefix `GF` sẽ khớp `GF-10`, `GF-20`.
-- **Ánh xạ kích cỡ**: nhập mã sản phẩm trong PDF, sau đó thêm từng cặp `Kích thước trong PDF` → `Kích thước Printbelle`.
+- **Ánh xạ kích cỡ**: nhập SKU prefix hoặc mã sản phẩm trong PDF, sau đó thêm từng cặp `Kích thước trong PDF` → `Kích thước Printbelle`. Ví dụ prefix `GF` sẽ áp dụng cho `GF-10`, `GF-20` và các SKU bắt đầu bằng `GF`; nếu nhập mã đầy đủ thì chỉ áp dụng cho mã đó.
 - Bấm **Lưu cấu hình** để lưu trên server; mọi trình duyệt đều dùng chung cấu hình.
 - **Tải lại từ server** bỏ các chỉnh sửa chưa lưu trên giao diện và tải cấu hình hiện tại từ server.
 
