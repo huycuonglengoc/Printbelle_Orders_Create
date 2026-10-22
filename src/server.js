@@ -9,6 +9,7 @@ import { buildAllPayloads } from "./services/orderBuilder.js";
 import { buildImportRows, createImportWorkbook } from "./services/orderImportExporter.js";
 import { createOrder, getOrders, getProducts } from "./services/printbelleClient.js";
 import { r2Status, uploadArtworkToR2 } from "./services/r2Storage.js";
+import { parseSuccessfulExportWorkbook } from "./services/variantMapping.js";
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024, files: 200 } });
@@ -50,6 +51,16 @@ app.put("/api/catalog-config", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(422).json({ error: `Could not save catalog configuration: ${error.message}` });
+  }
+});
+
+app.post("/api/catalog/variant-rules/import", upload.single("export"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "Please select a successful Printbelle export workbook." });
+    const parsed = await parseSuccessfulExportWorkbook(req.file.buffer);
+    res.json(parsed);
+  } catch (error) {
+    res.status(422).json({ error: error.message || "Could not read the export workbook." });
   }
 });
 

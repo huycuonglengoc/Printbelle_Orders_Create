@@ -15,7 +15,8 @@ export function normalizeCatalog(catalog) {
     spus: Array.isArray(catalog?.spus) ? catalog.spus : [],
     sizeMappings: catalog?.sizeMappings && typeof catalog.sizeMappings === "object" ? catalog.sizeMappings : {},
     colorMappings: catalog?.colorMappings && typeof catalog.colorMappings === "object" ? catalog.colorMappings : {},
-    variantMappings: catalog?.variantMappings && typeof catalog.variantMappings === "object" ? catalog.variantMappings : {}
+    variantMappings: catalog?.variantMappings && typeof catalog.variantMappings === "object" ? catalog.variantMappings : {},
+    variantRules: Array.isArray(catalog?.variantRules) ? catalog.variantRules : []
   };
 }
 

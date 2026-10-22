@@ -1,4 +1,5 @@
 import { normalizeKey } from "./orderParser.js";
+import { findVariantProductCode } from "./variantMapping.js";
 
 function normalizeSize(value) {
   return normalizeKey(value).replace(/x/g, "x");
@@ -63,7 +64,8 @@ export function buildPrintbellePayload(order, catalog, artworkBaseUrl) {
     const spu = item.spu || findSpu(item, catalog);
     const mappedSize = item.sizeTarget || mapSize(item, catalog);
     const mappedColor = item.colorTarget || mapColor(item, catalog);
-    const productCode = item.productCodeTarget || buildVariantCode(item, spu, mappedSize, mappedColor, catalog);
+    const mappedProductCode = findVariantProductCode(item, { spu, mappedSize, mappedColor, catalog });
+    const productCode = item.productCodeTarget || mappedProductCode || buildVariantCode(item, spu, mappedSize, mappedColor, catalog);
     if (!spu) errors.push({ message: `${item.productCodeSource}: no SPU is configured.`, type: "spu" });
     const hasSizeMapping = Object.keys(rulesForProduct(catalog.sizeMappings, item.productCodeSource)).some((source) => normalizeSize(source) === normalizeSize(item.sizeRaw));
     if (item.sizeRaw && !item.sizeTarget && !hasSizeMapping) {

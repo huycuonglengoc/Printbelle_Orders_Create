@@ -3,17 +3,19 @@ export function normalizeCatalog(catalog) {
     spus: Array.isArray(catalog?.spus) ? catalog.spus : [],
     sizeMappings: catalog?.sizeMappings && typeof catalog.sizeMappings === 'object' ? catalog.sizeMappings : {},
     colorMappings: catalog?.colorMappings || {},
-    variantMappings: catalog?.variantMappings || {}
+    variantMappings: catalog?.variantMappings || {},
+    variantRules: Array.isArray(catalog?.variantRules) ? catalog.variantRules : []
   };
 }
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
 const uniqueDraftKey = (prefix) => `__new_${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-export function createCatalogEditor({ catalog, spuRoot, sizeRoot }) {
+export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot }) {
   let current = normalizeCatalog(catalog);
   const spuNode = document.querySelector(spuRoot);
   const sizeNode = document.querySelector(sizeRoot);
+  const variantNode = variantRoot ? document.querySelector(variantRoot) : null;
 
   function render() {
     const spus = current.spus || [];
@@ -37,6 +39,18 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot }) {
         <button class="button secondary compact size-add-row" type="button" data-action="add-size-row" data-group="${groupIndex}">+ Add size</button>
       </div>`;
     }).join('') : '<div class="empty-editor">No size mappings yet. Click “+ Add product” to create one.</div>';
+
+    if (variantNode) {
+      const rules = current.variantRules || [];
+      variantNode.innerHTML = rules.length ? rules.map((rule, index) => `<div class="variant-row" data-variant-rule="${index}">
+        <div class="editor-field"><label>SPU</label><input data-field="variant-spu" value="${escapeHtml(rule.spu)}" placeholder="ULCNP" /></div>
+        <div class="editor-field"><label>SKU prefix <span class="optional">optional</span></label><input data-field="variant-prefix" value="${escapeHtml(rule.skuPrefix)}" placeholder="GF" /></div>
+        <div class="editor-field"><label>Printbelle size <span class="optional">optional</span></label><input data-field="variant-size" value="${escapeHtml(rule.size)}" placeholder="5.8X8.5INCH" /></div>
+        <div class="editor-field"><label>Printbelle color <span class="optional">optional</span></label><input data-field="variant-color" value="${escapeHtml(rule.color)}" placeholder="Pink" /></div>
+        <div class="editor-field variant-code-field"><label>Output Product_Code</label><input data-field="variant-code" value="${escapeHtml(rule.productCode)}" placeholder="ULCNP-Pink/5.8X8.5INCH" /></div>
+        <button class="text-button" type="button" data-action="remove-variant-rule" data-index="${index}">Remove</button>
+      </div>`).join('') : '<div class="empty-editor">No Product_Code rules yet. Import a successful export or add one manually.</div>';
+    }
   }
 
   function sync() {
@@ -59,6 +73,15 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot }) {
       });
       next.sizeMappings[productCode] = rules;
     });
+    if (variantNode) {
+      next.variantRules = [...variantNode.querySelectorAll('[data-variant-rule]')].map((row) => ({
+        spu: row.querySelector('[data-field="variant-spu"]')?.value.trim() || '',
+        skuPrefix: row.querySelector('[data-field="variant-prefix"]')?.value.trim() || '',
+        size: row.querySelector('[data-field="variant-size"]')?.value.trim() || '',
+        color: row.querySelector('[data-field="variant-color"]')?.value.trim() || '',
+        productCode: row.querySelector('[data-field="variant-code"]')?.value.trim() || ''
+      })).filter((rule) => rule.spu || rule.skuPrefix || rule.size || rule.color || rule.productCode);
+    }
     current = next;
     return current;
   }
@@ -70,7 +93,19 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot }) {
   function removeSizeGroup(index) { sync(); const key = Object.keys(current.sizeMappings)[index]; delete current.sizeMappings[key]; render(); }
   function addSizeRow(groupIndex) { sync(); const key = Object.keys(current.sizeMappings)[groupIndex]; if (key) current.sizeMappings[key][uniqueDraftKey('size')] = ''; render(); }
   function removeSizeRow(groupIndex, rowIndex) { sync(); const key = Object.keys(current.sizeMappings)[groupIndex]; const sizeKey = Object.keys(current.sizeMappings[key] || {})[rowIndex]; if (key && sizeKey) delete current.sizeMappings[key][sizeKey]; render(); }
+  function addVariantRule(rule = {}) { sync(); current.variantRules.push({ spu: rule.spu || '', skuPrefix: rule.skuPrefix || '', size: rule.size || '', color: rule.color || '', productCode: rule.productCode || '' }); render(); }
+  function removeVariantRule(index) { sync(); current.variantRules.splice(index, 1); render(); }
+  function addVariantRules(rules) {
+    sync();
+    const existing = new Set(current.variantRules.map((rule) => [rule.spu, rule.skuPrefix, rule.size, rule.color, rule.productCode].map((value) => String(value || '').trim().toLowerCase()).join('|')));
+    for (const rule of rules || []) {
+      const normalized = { spu: rule.spu || '', skuPrefix: rule.skuPrefix || '', size: rule.size || '', color: rule.color || '', productCode: rule.productCode || '' };
+      const key = [normalized.spu, normalized.skuPrefix, normalized.size, normalized.color, normalized.productCode].map((value) => String(value || '').trim().toLowerCase()).join('|');
+      if (normalized.spu && normalized.productCode && !existing.has(key)) { current.variantRules.push(normalized); existing.add(key); }
+    }
+    render();
+  }
 
   render();
-  return { render, sync, setCatalog, addSpu, removeSpu, addSizeMapping, removeSizeGroup, addSizeRow, removeSizeRow, get catalog() { return current; } };
+  return { render, sync, setCatalog, addSpu, removeSpu, addSizeMapping, removeSizeGroup, addSizeRow, removeSizeRow, addVariantRule, removeVariantRule, addVariantRules, get catalog() { return current; } };
 }

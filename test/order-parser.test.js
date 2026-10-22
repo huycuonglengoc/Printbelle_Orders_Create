@@ -6,6 +6,8 @@ import { parseOrders } from "../src/services/orderParser.js";
 import { buildAllPayloads } from "../src/services/orderBuilder.js";
 import { buildImportRows } from "../src/services/orderImportExporter.js";
 import { assignArtworks } from "../src/services/artworkAssignment.js";
+import ExcelJS from "exceljs";
+import { parseExportProductCode, parseSuccessfulExportWorkbook } from "../src/services/variantMapping.js";
 
 const root = process.cwd();
 const sampleCatalog = JSON.parse(await fs.readFile(path.join(root, "data/catalog.json"), "utf8"));
@@ -102,4 +104,38 @@ test("builds import-template rows with the R2 artwork URL", () => {
   assert.equal(result.rows.length, 1);
   assert.equal(result.rows[0][0], "PB-IMPORT");
   assert.equal(result.rows[0][16], "https://artwork.example.com/artwork/test.png");
+});
+
+test("maps combined Product_Code rules imported from a successful export", () => {
+  const order = {
+    orderNumber: "PB-VARIANT",
+    items: [{ productCodeSource: "EJ-7", title: "Notebook", quantity: 1, sizeRaw: "", sizeTarget: "5.8X8.5INCH", color: "Pink" }],
+    artworks: [{ urlPath: "/notebook.png" }]
+  };
+  const catalog = {
+    ...sampleCatalog,
+    spus: [{ spu: "ULCNP", name: "Notebook", aliases: ["notebook"] }],
+    variantRules: [{ spu: "ULCNP", skuPrefix: "", size: "5.8X8.5INCH", color: "Pink", productCode: "ULCNP-Pink/5.8X8.5INCH" }]
+  };
+  const [built] = buildAllPayloads([order], catalog, "http://localhost:3000");
+  assert.equal(built.payload.items[0].productCode, "ULCNP-Pink/5.8X8.5INCH");
+});
+
+test("parses successful export Product_Code values into reusable rules", async () => {
+  assert.deepEqual(parseExportProductCode("ULCNP", "ULCNP-Pink/5.8X8.5INCH"), {
+    spu: "ULCNP",
+    skuPrefix: "",
+    size: "5.8X8.5INCH",
+    color: "Pink",
+    productCode: "ULCNP-Pink/5.8X8.5INCH"
+  });
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("export");
+  worksheet.addRow(["Product_Spu", "Product_Code"]);
+  worksheet.addRow(["ULCNP", "ULCNP-Pink/5.8X8.5INCH"]);
+  worksheet.addRow(["ULCNP", "ULCNP-Green/5.8X8.5INCH"]);
+  const parsed = await parseSuccessfulExportWorkbook(await workbook.xlsx.writeBuffer());
+  assert.equal(parsed.rules.length, 2);
+  assert.equal(parsed.skipped.length, 0);
+  assert.equal(parsed.rules[1].color, "Green");
 });

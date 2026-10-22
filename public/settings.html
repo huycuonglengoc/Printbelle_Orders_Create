@@ -29,6 +29,20 @@
           <button class="button secondary compact" id="addSizeMappingButton" type="button">+ Add product</button>
         </div>
         <div id="sizeEditorRoot" class="editor-list"></div>
+        <details class="advanced-settings">
+          <summary>Advanced: Product_Code rules</summary>
+          <div class="advanced-body">
+            <p class="advanced-intro">Use this only when Printbelle expects a combined code such as <code>ULCNP-Pink/5.8X8.5INCH</code>. The app matches SPU + size + color, and can optionally narrow the rule by SKU prefix.</p>
+            <div class="import-rule-bar">
+              <div><strong>Import from a successful export</strong><small>Choose the Excel file from Printbelle. Imported rules are added as drafts.</small></div>
+              <label class="button secondary compact file-button" for="variantImportInput">Choose .xlsx</label>
+              <input id="variantImportInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+            </div>
+            <div id="variantImportStatus" class="editor-help"></div>
+            <div id="variantEditorRoot" class="variant-editor"></div>
+            <button class="button secondary compact" id="addVariantRuleButton" type="button">+ Add Product_Code rule</button>
+          </div>
+        </details>
         <div class="catalog-actions">
           <button class="button secondary" id="resetCatalogButton" type="button">Reload from server</button>
           <button class="button primary" id="saveCatalogButton" type="button">Save configuration</button>

@@ -19,10 +19,15 @@ Mở trang cấu hình riêng tại `http://localhost:3000/settings` hoặc bấ
 
 - **Danh mục sản phẩm**: thêm tên hiển thị, mã SPU Printbelle, SKU prefix và các từ khóa xuất hiện trong PDF. Các giá trị ngăn cách bằng dấu phẩy và được dùng cho tự nhận diện. Ví dụ prefix `GF` sẽ khớp `GF-10`, `GF-20`.
 - **Ánh xạ kích cỡ**: nhập SKU prefix hoặc mã sản phẩm trong PDF, sau đó thêm từng cặp `Kích thước trong PDF` → `Kích thước Printbelle`. Ví dụ prefix `GF` sẽ áp dụng cho `GF-10`, `GF-20` và các SKU bắt đầu bằng `GF`; nếu nhập mã đầy đủ thì chỉ áp dụng cho mã đó.
+- **Product_Code rules (Advanced)**: mở mục thu gọn này khi file export thành công của Printbelle có mã gộp SPU, màu và kích cỡ, ví dụ `ULCNP-Pink/5.8X8.5INCH`. Có thể bấm **Choose .xlsx** để import các dòng `Product_Spu` + `Product_Code`; các rule được thêm dưới dạng bản nháp để kiểm tra trước khi lưu. Nếu nhiều SKU dùng cùng một rule, nhập thêm SKU prefix như `GF` để áp dụng cho `GF-10`, `GF-20`.
 - Bấm **Lưu cấu hình** để lưu trên server; mọi trình duyệt đều dùng chung cấu hình.
 - **Tải lại từ server** bỏ các chỉnh sửa chưa lưu trên giao diện và tải cấu hình hiện tại từ server.
 
-SPU hoặc kích thước cũng có thể được sửa trực tiếp trên từng order trước khi tạo preview. Cấu hình mặc định nằm trong [`data/catalog.json`](data/catalog.json) để server có fallback khi chưa có file cấu hình đã lưu. `colorMappings` và `variantMappings` hiện vẫn là các nhóm nâng cao trong file cấu hình.
+SPU hoặc kích thước cũng có thể được sửa trực tiếp trên từng order trước khi tạo preview. Cấu hình mặc định nằm trong [`data/catalog.json`](data/catalog.json) để server có fallback khi chưa có file cấu hình đã lưu. `colorMappings` và `variantMappings` cũ vẫn được giữ để tương thích; rule mới dùng `variantRules` và có thể chỉnh trực tiếp trong giao diện.
+
+### Mapping Product_Code từ file export thành công
+
+File export mẫu dùng cột `Product_Spu` cùng `Product_Code`, trong đó `Product_Code` có dạng `SPU-Color/Size`. Trang Settings đọc hai cột này, tách thành các trường SPU, color, size và mã đích, sau đó thêm thành rule. Khi tạo order, app ưu tiên rule có SKU prefix dài hơn và các điều kiện size/color cụ thể hơn; nếu không có rule thì vẫn dùng mapping và fallback cũ.
 
 ### Quy tắc nhiều artwork
 
