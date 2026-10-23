@@ -22,8 +22,14 @@ function findSpu(item, catalog) {
   const haystack = normalizeKey(`${item.productCodeSource} ${item.title}`);
   const values = (value) => Array.isArray(value) ? value : String(value || "").split(",");
   const prefixCandidate = (catalog.spus || []).find((entry) => values(entry.skuPrefixes).some((prefix) => skuPrefixMatches(item.productCodeSource, prefix)));
-  const aliasCandidate = (catalog.spus || []).find((entry) => values(entry.aliases).some((alias) => haystack.includes(normalizeKey(alias))));
-  const candidate = prefixCandidate || aliasCandidate;
+  const aliasCandidate = (catalog.spus || []).find((entry) => [entry.name, ...values(entry.aliases)].some((alias) => {
+    const normalizedAlias = normalizeKey(alias);
+    return normalizedAlias && haystack.includes(normalizedAlias);
+  }));
+  // A clear product-name/alias match is more specific than a potentially
+  // stale or overly broad prefix rule. This prevents a SKU such as SC-10
+  // from being assigned to the wrong SPU when the title says Suncatcher.
+  const candidate = aliasCandidate || prefixCandidate;
   return candidate?.spu || "";
 }
 

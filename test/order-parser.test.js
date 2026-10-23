@@ -55,6 +55,23 @@ test("matches SKU prefixes separated by hyphen or underscore", () => {
   }
 });
 
+test("prefers a clear product name over a stale SKU prefix", () => {
+  const order = {
+    orderNumber: "PB-SPU-NAME",
+    items: [{ productCodeSource: "SC-10", title: "Butterfly Suncatcher with Custom Name", quantity: 1, sizeRaw: "" }],
+    artworks: [{ urlPath: "/suncatcher.png" }]
+  };
+  const catalog = {
+    ...sampleCatalog,
+    spus: [
+      { spu: "UJBOX", name: "Jewelry Storage", skuPrefixes: ["SC"] },
+      { spu: "USC", name: "SunCatcher", aliases: ["suncatcher"] }
+    ]
+  };
+  const [built] = buildAllPayloads([order], catalog, "http://localhost:3000");
+  assert.equal(built.payload.items[0].productSpu, "USC");
+});
+
 test("maps sizes by SKU prefix", () => {
   const order = { orderNumber: "PB-SIZE-PREFIX", items: [{ productCodeSource: "GF-20", title: "Flower Pot", quantity: 1, sizeRaw: '2"x2"x3' }], artworks: [{ urlPath: "/flower.png" }] };
   const payloads = buildAllPayloads([order], { ...sampleCatalog, sizeMappings: { GF: { "2x2x3": "Small" } }, spus: [{ spu: "UFP", name: "Flower Pot", skuPrefixes: ["GF"] }] }, "http://localhost:3000");
