@@ -38,6 +38,23 @@ test("maps SKU prefixes to the same SPU", () => {
   assert.equal(payloads[0].payload.items[0].productSpu, "UFP");
 });
 
+test("matches SKU prefixes separated by hyphen or underscore", () => {
+  const makeOrder = (productCode) => ({ orderNumber: `PB-PREFIX-${productCode}`, items: [{ productCodeSource: productCode, title: "Flower Pot", quantity: 1, sizeRaw: '2x2x3' }], artworks: [{ urlPath: "/flower.png" }] });
+  const catalog = {
+    ...sampleCatalog,
+    spus: [{ spu: "UFP", name: "Flower Pot", skuPrefixes: ["GF-"] }],
+    sizeMappings: { "GF_": { "2x2x3": "Small" } },
+    variantRules: [{ spu: "UFP", skuPrefix: "GF-", size: "Small", productCode: "UFP-SMALL" }]
+  };
+  for (const productCode of ["GF-20", "GF_20"]) {
+    const [built] = buildAllPayloads([makeOrder(productCode)], catalog, "http://localhost:3000");
+    assert.equal(built.payload.items[0].productSpu, "UFP");
+    assert.equal(built.payload.items[0].size, "Small");
+    assert.equal(built.payload.items[0].productCode, "UFP-SMALL");
+    assert.equal(built.skipped, false);
+  }
+});
+
 test("maps sizes by SKU prefix", () => {
   const order = { orderNumber: "PB-SIZE-PREFIX", items: [{ productCodeSource: "GF-20", title: "Flower Pot", quantity: 1, sizeRaw: '2"x2"x3' }], artworks: [{ urlPath: "/flower.png" }] };
   const payloads = buildAllPayloads([order], { ...sampleCatalog, sizeMappings: { GF: { "2x2x3": "Small" } }, spus: [{ spu: "UFP", name: "Flower Pot", skuPrefixes: ["GF"] }] }, "http://localhost:3000");

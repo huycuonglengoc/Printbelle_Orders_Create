@@ -1,15 +1,16 @@
 import ExcelJS from "exceljs";
+import { normalizeSkuToken, skuPrefixMatches, splitSkuPrefixes } from "./skuPrefix.js";
 
 function clean(value) {
   return String(value ?? "").replace(/[\u00ad\u00a0]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function normalizeToken(value) {
-  return clean(value).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return normalizeSkuToken(value);
 }
 
 function prefixesForRule(value) {
-  return clean(value).split(",").map((prefix) => normalizeToken(prefix)).filter(Boolean);
+  return splitSkuPrefixes(value);
 }
 
 function escapeRegExp(value) {
@@ -30,9 +31,8 @@ export function normalizeVariantRules(rules) {
 
 function ruleMatches(rule, { spu, sourceSku, size, color, ignoreSize = false }) {
   if (normalizeToken(rule.spu) !== normalizeToken(spu)) return false;
-  const normalizedSource = normalizeToken(sourceSku);
   const prefixes = prefixesForRule(rule.skuPrefix);
-  if (prefixes.length && !prefixes.some((prefix) => normalizedSource.startsWith(prefix))) return false;
+  if (prefixes.length && !prefixes.some((prefix) => skuPrefixMatches(sourceSku, prefix))) return false;
   if (!ignoreSize && rule.size && normalizeToken(rule.size) !== normalizeToken(size)) return false;
   if (rule.color && normalizeToken(rule.color) !== normalizeToken(color)) return false;
   return true;

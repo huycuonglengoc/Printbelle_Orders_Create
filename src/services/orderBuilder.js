@@ -1,5 +1,6 @@
 import { normalizeKey } from "./orderParser.js";
 import { findVariantProductCode } from "./variantMapping.js";
+import { skuPrefixMatches, splitSkuPrefixes } from "./skuPrefix.js";
 
 const DEFAULT_SHIPPING_METHOD = "STANDARD SHIPPING-USPS";
 const BULK_SHIPPING_METHOD = "FAST   SHIPPING";
@@ -18,13 +19,9 @@ function normalizeSize(value) {
 }
 
 function findSpu(item, catalog) {
-  const productCode = normalizeKey(item.productCodeSource);
   const haystack = normalizeKey(`${item.productCodeSource} ${item.title}`);
   const values = (value) => Array.isArray(value) ? value : String(value || "").split(",");
-  const prefixCandidate = (catalog.spus || []).find((entry) => values(entry.skuPrefixes).some((prefix) => {
-    const normalizedPrefix = normalizeKey(prefix);
-    return normalizedPrefix && productCode.startsWith(normalizedPrefix);
-  }));
+  const prefixCandidate = (catalog.spus || []).find((entry) => values(entry.skuPrefixes).some((prefix) => skuPrefixMatches(item.productCodeSource, prefix)));
   const aliasCandidate = (catalog.spus || []).find((entry) => values(entry.aliases).some((alias) => haystack.includes(normalizeKey(alias))));
   const candidate = prefixCandidate || aliasCandidate;
   return candidate?.spu || "";
@@ -33,7 +30,7 @@ function findSpu(item, catalog) {
 function rulesForProduct(rules, productCode) {
   const normalizedProductCode = normalizeKey(productCode);
   const entries = Object.entries(rules || {});
-  const prefixesForKey = (key) => String(key || "").split(",").map((part) => normalizeKey(part)).filter(Boolean);
+  const prefixesForKey = (key) => splitSkuPrefixes(key);
   const exact = entries.find(([key]) => prefixesForKey(key).some((part) => part === normalizedProductCode));
   if (exact) return exact[1] || {};
 
@@ -42,7 +39,7 @@ function rulesForProduct(rules, productCode) {
   // matching prefix when rules overlap (for example G and GF).
   const prefix = entries
     .map(([key, value]) => ({ value, longestPrefix: Math.max(0, ...prefixesForKey(key).map((part) => part.length)), prefixes: prefixesForKey(key) }))
-    .filter((entry) => entry.longestPrefix && entry.prefixes.some((prefix) => normalizedProductCode.startsWith(prefix)))
+    .filter((entry) => entry.longestPrefix && entry.prefixes.some((prefix) => skuPrefixMatches(productCode, prefix)))
     .sort((left, right) => right.longestPrefix - left.longestPrefix)[0];
   return prefix?.value || {};
 }
@@ -53,12 +50,11 @@ function mapSize(item, catalog) {
   if (exact) return exact;
   if (item.sizeRaw) return item.sizeRaw;
 
-  const productCode = normalizeKey(item.productCodeSource);
   const defaults = (catalog.defaultSizeRules || [])
-    .filter((rule) => (String(rule?.skuPrefix || "").split(",").map((prefix) => normalizeKey(prefix)).filter(Boolean)).some((prefix) => productCode.startsWith(prefix)) && rule?.size)
+    .filter((rule) => splitSkuPrefixes(rule?.skuPrefix).some((prefix) => skuPrefixMatches(item.productCodeSource, prefix)) && rule?.size)
     .sort((left, right) => {
-      const leftPrefix = Math.max(0, ...String(left.skuPrefix).split(",").map((prefix) => normalizeKey(prefix).length));
-      const rightPrefix = Math.max(0, ...String(right.skuPrefix).split(",").map((prefix) => normalizeKey(prefix).length));
+      const leftPrefix = Math.max(0, ...splitSkuPrefixes(left.skuPrefix).map((prefix) => prefix.length));
+      const rightPrefix = Math.max(0, ...splitSkuPrefixes(right.skuPrefix).map((prefix) => prefix.length));
       return rightPrefix - leftPrefix;
     });
   return defaults[0]?.size || "";

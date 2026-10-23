@@ -17,8 +17,8 @@ Mở `http://localhost:3000`, chọn hoặc kéo thả một file PDF và các f
 
 Mở trang cấu hình riêng tại `http://localhost:3000/settings` hoặc bấm **Cấu hình SPU** trên trang chính. Không cần đọc PDF trước và không cần chỉnh JSON thủ công:
 
-- **Danh mục sản phẩm**: thêm tên hiển thị, mã SPU Printbelle, SKU prefix và các từ khóa xuất hiện trong PDF. Các giá trị ngăn cách bằng dấu phẩy và được dùng cho tự nhận diện. Ví dụ prefix `GF` sẽ khớp `GF-10`, `GF-20`.
-- **Ánh xạ kích cỡ**: nhập một hoặc nhiều SKU prefix (ngăn cách bằng dấu phẩy) hoặc mã sản phẩm trong PDF, sau đó thêm từng cặp `Kích thước trong PDF` → `Kích thước Printbelle`. Ví dụ `GF, JS` sẽ áp dụng cho `GF-10`, `GF-20`, `JS-3` và các SKU bắt đầu bằng các prefix đó; nếu nhập mã đầy đủ thì chỉ áp dụng cho mã đó.
+- **Danh mục sản phẩm**: thêm tên hiển thị, mã SPU Printbelle, SKU prefix và các từ khóa xuất hiện trong PDF. Các giá trị ngăn cách bằng dấu phẩy và được dùng cho tự nhận diện. Ví dụ prefix `GF` sẽ khớp `GF-10`, `GF_10`, `GF-20` và các SKU tương ứng.
+- **Ánh xạ kích cỡ**: nhập một hoặc nhiều SKU prefix (ngăn cách bằng dấu phẩy) hoặc mã sản phẩm trong PDF, sau đó thêm từng cặp `Kích thước trong PDF` → `Kích thước Printbelle`. Ví dụ `GF, JS` sẽ áp dụng cho `GF-10`, `GF_10`, `GF-20`, `JS-3` và các SKU bắt đầu bằng các prefix đó; nếu nhập mã đầy đủ thì chỉ áp dụng cho mã đó.
 - **Default size when PDF has no size**: trong mục Advanced, thêm các prefix như `EJ-7, GF` và kích cỡ Printbelle mặc định. Rule này chỉ chạy khi PDF không có kích cỡ; nếu PDF có kích cỡ thì mapping cụ thể trong phần Size mappings vẫn được ưu tiên.
 - **Product_Code rules (Advanced)**: mở mục thu gọn này khi file export thành công của Printbelle có mã gộp SPU, màu và kích cỡ, ví dụ `ULCNP-Pink/5.8X8.5INCH`. Có thể bấm **Choose .xlsx** để import các dòng `Product_Spu` + `Product_Code`; các rule được thêm dưới dạng bản nháp để kiểm tra trước khi lưu. Một rule có thể có nhiều SKU prefix, nhập cách nhau bằng dấu phẩy, ví dụ `GF, JS`.
 - Bấm **Lưu cấu hình** để lưu trên server; mọi trình duyệt đều dùng chung cấu hình.
