@@ -52,14 +52,18 @@ function parseShipping(lines, headerIndex) {
 function parseItem(lines, itemStart, nextItemStart = -1) {
   const first = lines[itemStart] || "";
   const match = first.match(/^(\d+)\s+([\w-]+)\s+(.+?)(?:\s*\|\s*)?\$\s*([\d,]+(?:\.\d{1,2})?)/);
-  if (!match) return null;
-  const quantity = Number(match[1]);
-  const skuLine = lines[itemStart + 1]?.match(/^[A-Z0-9-]{3,}$/i)?.[0];
-  const sourceSku = canonicalProductCode(skuLine || match[2]);
-  const titleParts = [skuLine ? `${match[2]} ${match[3]}` : match[3]];
+  const shortPriceMatch = first.match(/^(\d+)\s+\(?\$\s*([\d,]+(?:\.\d{1,2})?)\)?$/);
+  if (!match && !shortPriceMatch) return null;
+  const quantity = Number(match?.[1] || shortPriceMatch[1]);
+  const standaloneSku = lines[itemStart + 1]?.match(/^[A-Z0-9-]{3,}$/i)?.[0];
+  const inlineSku = !match ? lines[itemStart + 1]?.match(/^([A-Z0-9-]{3,})(?:\s|$)/i)?.[1] : "";
+  const skuLine = standaloneSku || inlineSku;
+  const sourceSku = canonicalProductCode(skuLine || match?.[2] || "");
+  const titleParts = match ? [standaloneSku ? `${match[2]} ${match[3]}` : match[3]] : [];
+  const skipStandaloneSkuLine = Boolean(match && standaloneSku);
   let cursor = itemStart + 1;
   while (cursor < lines.length && (nextItemStart < 0 || cursor < nextItemStart) && !/^(?:Size Options|Choose Your Color|Journal Color Options|PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Choice Graphic Options|\d+\s+Discount|Sub Total|Tax|Shipping|Total|Note:)/i.test(lines[cursor])) {
-    if (skuLine && cursor === itemStart + 1) {
+    if (skipStandaloneSkuLine && cursor === itemStart + 1) {
       cursor += 1;
       continue;
     }
@@ -84,14 +88,54 @@ function parseItem(lines, itemStart, nextItemStart = -1) {
   return {
     sourceSku,
     productCodeSource: canonicalProductCode(codeMatch?.[1] || sourceSku),
-    title: clean(titleParts.join(" ")).replace(/\s*\|\s*/g, " | "),
+    title: clean(titleParts.join(" ") || fullItemText.split(/(?:Size Options|Choose Your Color|Journal Color Options|PERSONALIZATION|Personalization|Add personalization):/i)[0]).replace(/\s*\|\s*/g, " | "),
     quantity,
-    price: Number((match[4] || "0").replace(/,/g, "")),
+    price: Number((match?.[4] || shortPriceMatch?.[2] || "0").replace(/,/g, "")),
     sizeRaw: clean(sizeRaw),
     color: clean(colorMatch?.[1] || ""),
     personalization: clean(personalization),
     rawText: fullItemText
   };
+}
+
+function isItemStartLine(line, index, lines) {
+  if (/^\d+\s+Discount\b/i.test(line)) return false;
+  if (/^\d+\s+\(\s*\$/.test(line) && /^Discount$/i.test(lines[index + 1] || "")) return false;
+  return /^\d+\s+.+\$\s*[\d,]+(?:\.\d{1,2})?/.test(line)
+    || /^\d+\s+\(?\$\s*[\d,]+(?:\.\d{1,2})?\)?$/.test(line);
+}
+
+function applyContinuationOptions(item, lines) {
+  const extraText = lines.map(clean).filter(Boolean).join(" ");
+  if (!extraText) return item;
+  const fullItemText = `${item.rawText} ${extraText}`;
+  const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
+  const sizeMatch = fullItemText.match(/Size Options:\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Note:|$))/i);
+  const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Choice Graphic|Size Options|Note:|$))/gi)];
+  return {
+    ...item,
+    sizeRaw: clean(sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "") || item.sizeRaw),
+    color: clean(colorMatch?.[1] || item.color),
+    personalization: clean(personalizationMatches.at(-1)?.[1] || item.personalization),
+    rawText: fullItemText
+  };
+}
+
+function continuationItems(lines, currentOrder) {
+  const normalized = lines.map(clean).filter(Boolean);
+  const itemStarts = normalized
+    .map((line, index) => ({ line, index }))
+    .filter(({ line, index }) => isItemStartLine(line, index, normalized))
+    .map(({ index }) => index);
+  const firstItemStart = itemStarts[0] ?? normalized.length;
+  const leadingContinuation = normalized
+    .slice(0, firstItemStart)
+    .filter((line) => !/^Qty\s+Item\s+Description/i.test(line));
+  if (currentOrder?.items?.length && leadingContinuation.length) {
+    const lastIndex = currentOrder.items.length - 1;
+    currentOrder.items[lastIndex] = applyContinuationOptions(currentOrder.items[lastIndex], leadingContinuation);
+  }
+  return itemStarts.map((itemStart, index) => parseItem(normalized, itemStart, itemStarts[index + 1] ?? -1)).filter(Boolean);
 }
 
 export function parsePageLines(lines, pageNumber) {
@@ -102,7 +146,7 @@ export function parsePageLines(lines, pageNumber) {
   const tableHeaderIndex = normalized.findIndex((line, index) => index > headerIndex && /^Qty\s+Item\s+Description/i.test(line));
   const itemStarts = normalized
     .map((line, index) => ({ line, index }))
-    .filter(({ line, index }) => index > tableHeaderIndex && !/^(?:\d+\s+Discount|\d+\s+\(.*\)\s+Discount|Sub Total|Tax|Shipping|Total|Note:)/i.test(line) && /^\d+\s+.+\$\s*[\d,]+(?:\.\d{1,2})?/.test(line))
+    .filter(({ line, index }) => index > tableHeaderIndex && !/^(?:\d+\s+Discount|\d+\s+\(.*\)\s+Discount|Sub Total|Tax|Shipping|Total|Note:)/i.test(line) && isItemStartLine(line, index, normalized))
     .map(({ index }) => index);
   const items = itemStarts.map((itemStart, index) => parseItem(normalized, itemStart, itemStarts[index + 1] ?? -1)).filter(Boolean);
   return { id: `${shipping.orderNumber || "page"}-${pageNumber}`, pageNumber, ...shipping, items };
@@ -112,8 +156,10 @@ function matchArtworks(orders, artworkFiles) {
   const groups = new Map();
   for (const file of artworkFiles) {
     const base = path.basename(file.originalname || file.filename || "");
-    const match = base.match(/^\d+_(.+?)(?:_\d+)?\.(?:png|jpe?g|webp)$/i);
-    const customerKey = normalizeKey(match?.[1] || base.replace(/\.[^.]+$/, ""));
+    const stem = base.replace(/\.(?:png|jpe?g|webp)$/i, "");
+    const afterSequence = stem.replace(/^\d+_/, "");
+    const customerMatch = afterSequence.match(/^(.+?)_\d+(?:_.*)?$/);
+    const customerKey = normalizeKey(customerMatch?.[1] || afterSequence);
     const list = groups.get(customerKey) || [];
     list.push({ ...file, path: file.path || file.savedPath, originalname: base });
     groups.set(customerKey, list);
@@ -135,7 +181,25 @@ function matchArtworks(orders, artworkFiles) {
 
 export async function parseOrders(pdfBuffer, artworkFiles = []) {
   const pages = await extractPdfPages(pdfBuffer);
-  const orders = pages.map((page) => parsePageLines(page.lines, page.pageNumber)).filter(Boolean);
+  const orders = [];
+  let currentOrder = null;
+  let continuationLines = [];
+  const flushContinuation = () => {
+    if (!currentOrder || !continuationLines.length) return;
+    currentOrder.items.push(...continuationItems(continuationLines, currentOrder));
+    continuationLines = [];
+  };
+  for (const page of pages) {
+    const parsed = parsePageLines(page.lines, page.pageNumber);
+    if (parsed) {
+      flushContinuation();
+      currentOrder = parsed;
+      orders.push(parsed);
+    } else if (currentOrder) {
+      continuationLines.push(...page.lines);
+    }
+  }
+  flushContinuation();
   if (!orders.length) throw new Error("No valid packing slips were found in the PDF.");
   return matchArtworks(orders, artworkFiles);
 }

@@ -65,8 +65,8 @@ test("parses Jewelry Storage color and personalization", async () => {
 test("keeps one bulk item and raises quantity to the artwork count", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Notebook/input.pdf"));
   const artworks = [
-    ...Array.from({ length: 37 }, (_, index) => ({ originalname: `${index + 1}_Stacey Wierman_${index}.png`, urlPath: `/stacey-${index}.png` })),
-    { originalname: "38_Jordan Axenfeld_0.png", urlPath: "/jordan.png" }
+    ...Array.from({ length: 37 }, (_, index) => ({ originalname: `${index + 1}_Stacey Wierman_${index}_jb.png`, urlPath: `/stacey-${index}.png` })),
+    { originalname: "38_Jordan Axenfeld_0_jb - Copy.png", urlPath: "/jordan.png" }
   ];
   const orders = await parseOrders(pdf, artworks);
   assert.equal(orders[0].items.length, 1);
