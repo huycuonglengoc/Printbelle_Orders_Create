@@ -44,7 +44,7 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot })
       const rules = current.variantRules || [];
       variantNode.innerHTML = rules.length ? rules.map((rule, index) => `<div class="variant-row" data-variant-rule="${index}">
         <div class="editor-field"><label>SPU</label><input data-field="variant-spu" value="${escapeHtml(rule.spu)}" placeholder="ULCNP" /></div>
-        <div class="editor-field"><label>SKU prefix <span class="optional">optional</span></label><input data-field="variant-prefix" value="${escapeHtml(rule.skuPrefix)}" placeholder="GF" /></div>
+        <div class="editor-field"><label>SKU prefixes <span class="optional">optional</span></label><input data-field="variant-prefix" value="${escapeHtml(rule.skuPrefix)}" placeholder="GF, JS" /><div class="editor-help">Separate prefixes with commas.</div></div>
         <div class="editor-field"><label>Printbelle size <span class="optional">optional</span></label><input data-field="variant-size" value="${escapeHtml(rule.size)}" placeholder="5.8X8.5INCH" /></div>
         <div class="editor-field"><label>Printbelle color <span class="optional">optional</span></label><input data-field="variant-color" value="${escapeHtml(rule.color)}" placeholder="Pink" /></div>
         <div class="editor-field variant-code-field"><label>Output Product_Code</label><input data-field="variant-code" value="${escapeHtml(rule.productCode)}" placeholder="ULCNP-Pink/5.8X8.5INCH" /></div>

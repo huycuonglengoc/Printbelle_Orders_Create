@@ -69,6 +69,42 @@ function renderSubmitResults(data) {
   $('#submitResults').innerHTML = rows.map((row) => `<article class="submit-result ${row.status === 'SUBMITTED' ? 'result-ok' : 'result-error'}"><header><strong>${escapeHtml(row.orderId)}</strong><span>${escapeHtml(row.status)}</span></header><pre>${escapeHtml(row.detail)}</pre></article>`).join('');
 }
 
+function isPdfFile(file) {
+  return file?.type === 'application/pdf' || /\.pdf$/i.test(file?.name || '');
+}
+
+function isArtworkFile(file) {
+  return file?.type?.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(file?.name || '');
+}
+
+function setDroppedFiles(input, files) {
+  const transfer = new DataTransfer();
+  files.forEach((file) => transfer.items.add(file));
+  input.files = transfer.files;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+document.querySelectorAll('[data-drop-input]').forEach((zone) => {
+  const input = document.getElementById(zone.dataset.dropInput);
+  const acceptsMultiple = input?.multiple;
+  zone.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    zone.classList.add('dragging');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+  zone.addEventListener('drop', (event) => {
+    event.preventDefault();
+    zone.classList.remove('dragging');
+    const dropped = [...(event.dataTransfer.files || [])].filter(acceptsMultiple ? isArtworkFile : isPdfFile);
+    if (!dropped.length) {
+      setStatus('#parseStatus', acceptsMultiple ? 'Please drop image artwork files.' : 'Please drop a PDF file.', 'error');
+      return;
+    }
+    setDroppedFiles(input, acceptsMultiple ? dropped : dropped.slice(0, 1));
+  });
+});
+
 $('#pdfInput').addEventListener('change', (event) => { $('#pdfLabel').textContent = event.target.files[0]?.name || 'Choose input.pdf'; });
 $('#artworkInput').addEventListener('change', (event) => { $('#artworkLabel').textContent = event.target.files.length ? `${event.target.files.length} artwork files selected` : 'Choose artwork'; });
 $('#uploadForm').addEventListener('submit', async (event) => {

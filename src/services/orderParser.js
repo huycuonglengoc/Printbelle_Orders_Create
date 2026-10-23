@@ -77,7 +77,7 @@ function parseItem(lines, itemStart, nextItemStart = -1) {
   const fullItemText = optionLines.join(" ");
   const codeMatch = fullItemText.match(/\(([A-Z0-9-]{2,}(?:\s+[A-Z0-9-]{1,})?)\)/i);
   const sizeMatch = fullItemText.match(/Size Options:\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Note:|$))/i);
-  const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Journal Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choice Graphic|Note:|$))/i);
+  const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
   const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Choice Graphic|Size Options|Note:|$))/gi)];
   const personalization = personalizationMatches.at(-1)?.[1]?.trim() || "";
   const sizeRaw = sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "").trim() || "";

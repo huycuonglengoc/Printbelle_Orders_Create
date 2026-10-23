@@ -27,8 +27,8 @@
         <div class="panel-heading"><div><p class="eyebrow">STEP 01</p><h2>Choose input files</h2></div><span class="hint">Artwork filenames should include the customer name</span></div>
         <form id="uploadForm">
           <div class="drop-grid">
-            <label class="dropzone" for="pdfInput"><input id="pdfInput" name="pdf" type="file" accept="application/pdf" required /><span class="drop-icon">PDF</span><strong id="pdfLabel">Choose input.pdf</strong><small>1 PDF packing slip</small></label>
-            <label class="dropzone" for="artworkInput"><input id="artworkInput" name="artworks" type="file" accept="image/png,image/jpeg,image/webp" multiple /><span class="drop-icon">IMG</span><strong id="artworkLabel">Choose artwork</strong><small>Multiple PNG/JPG/WebP files</small></label>
+            <label class="dropzone" for="pdfInput" data-drop-input="pdfInput"><input id="pdfInput" name="pdf" type="file" accept="application/pdf,.pdf" required /><span class="drop-icon">PDF</span><strong id="pdfLabel">Drop PDF or choose a file</strong><small>1 PDF packing slip · any filename</small></label>
+            <label class="dropzone" for="artworkInput" data-drop-input="artworkInput"><input id="artworkInput" name="artworks" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" multiple /><span class="drop-icon">IMG</span><strong id="artworkLabel">Drop graphics or choose files</strong><small>Multiple PNG/JPG/WebP files · any filename</small></label>
           </div>
           <button class="button primary" type="submit">Read orders <span>→</span></button>
         </form>

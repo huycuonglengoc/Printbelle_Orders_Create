@@ -8,6 +8,10 @@ function normalizeToken(value) {
   return clean(value).toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
+function prefixesForRule(value) {
+  return clean(value).split(",").map((prefix) => normalizeToken(prefix)).filter(Boolean);
+}
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -27,8 +31,8 @@ export function normalizeVariantRules(rules) {
 function ruleMatches(rule, { spu, sourceSku, size, color }) {
   if (normalizeToken(rule.spu) !== normalizeToken(spu)) return false;
   const normalizedSource = normalizeToken(sourceSku);
-  const normalizedPrefix = normalizeToken(rule.skuPrefix);
-  if (normalizedPrefix && !normalizedSource.startsWith(normalizedPrefix)) return false;
+  const prefixes = prefixesForRule(rule.skuPrefix);
+  if (prefixes.length && !prefixes.some((prefix) => normalizedSource.startsWith(prefix))) return false;
   if (rule.size && normalizeToken(rule.size) !== normalizeToken(size)) return false;
   if (rule.color && normalizeToken(rule.color) !== normalizeToken(color)) return false;
   return true;
@@ -44,10 +48,10 @@ export function findVariantProductCode(item, { spu, mappedSize, mappedColor, cat
       color: mappedColor
     }))
     .sort((left, right) => {
-      const leftPrefix = normalizeToken(left.skuPrefix);
-      const rightPrefix = normalizeToken(right.skuPrefix);
-      const leftSpecificity = (leftPrefix ? 1000 + leftPrefix.length : 0) + (left.size ? 10 : 0) + (left.color ? 5 : 0);
-      const rightSpecificity = (rightPrefix ? 1000 + rightPrefix.length : 0) + (right.size ? 10 : 0) + (right.color ? 5 : 0);
+      const leftPrefix = Math.max(0, ...prefixesForRule(left.skuPrefix).map((prefix) => prefix.length));
+      const rightPrefix = Math.max(0, ...prefixesForRule(right.skuPrefix).map((prefix) => prefix.length));
+      const leftSpecificity = (leftPrefix ? 1000 + leftPrefix : 0) + (left.size ? 10 : 0) + (left.color ? 5 : 0);
+      const rightSpecificity = (rightPrefix ? 1000 + rightPrefix : 0) + (right.size ? 10 : 0) + (right.color ? 5 : 0);
       return rightSpecificity - leftSpecificity;
     });
   return candidates[0]?.productCode || "";

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseOrders } from "../src/services/orderParser.js";
+import { parseOrders, parsePageLines } from "../src/services/orderParser.js";
 import { buildAllPayloads } from "../src/services/orderBuilder.js";
 import { buildImportRows } from "../src/services/orderImportExporter.js";
 import { assignArtworks } from "../src/services/artworkAssignment.js";
@@ -119,6 +119,43 @@ test("maps combined Product_Code rules imported from a successful export", () =>
   };
   const [built] = buildAllPayloads([order], catalog, "http://localhost:3000");
   assert.equal(built.payload.items[0].productCode, "ULCNP-Pink/5.8X8.5INCH");
+});
+
+test("supports multiple SKU prefixes in one Product_Code rule", () => {
+  const order = {
+    orderNumber: "PB-MULTI-PREFIX",
+    items: [{ productCodeSource: "JS-3", title: "Jewelry Storage", quantity: 1, color: "Green", sizeRaw: "" }],
+    artworks: [{ urlPath: "/storage.png" }]
+  };
+  const catalog = {
+    ...sampleCatalog,
+    spus: [{ spu: "UJBOX", name: "Jewelry Storage", skuPrefixes: ["JS"] }],
+    variantRules: [{ spu: "UJBOX", skuPrefix: "GF, JS", color: "Green", productCode: "UJBOX-Green/DEFAULT" }]
+  };
+  const [built] = buildAllPayloads([order], catalog, "http://localhost:3000");
+  assert.equal(built.payload.items[0].productCode, "UJBOX-Green/DEFAULT");
+});
+
+test("stops color parsing before font options", () => {
+  const page = parsePageLines([
+    "Ship To: Example Customer Order #PB-COLOR",
+    "1 Main Street",
+    "Date 01/01/2026",
+    "Example City, TX 78701",
+    "User example",
+    "Qty Item Description",
+    "1 EJ-7 Custom Notebook $10.00",
+    "Journal Color Options: Green Font Options: Font 2 PERSONALIZATION: Example",
+    "Total"
+  ], 1);
+  assert.equal(page.items[0].color, "Green");
+});
+
+test("selects shipping method from total item quantity", () => {
+  const makeOrder = (quantity) => ({ orderNumber: `PB-SHIPPING-${quantity}`, items: [{ productCodeSource: "EJ-7", title: "Notebook", quantity, sizeRaw: "" }], artworks: [{ urlPath: "/notebook.png" }] });
+  const catalog = { ...sampleCatalog, spus: [{ spu: "ULCNP", name: "Notebook", skuPrefixes: ["EJ"] }] };
+  assert.equal(buildAllPayloads([makeOrder(9)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING-USPS");
+  assert.equal(buildAllPayloads([makeOrder(10)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "FAST   SHIPPING");
 });
 
 test("parses successful export Product_Code values into reusable rules", async () => {

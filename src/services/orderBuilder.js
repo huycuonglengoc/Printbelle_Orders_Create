@@ -1,6 +1,18 @@
 import { normalizeKey } from "./orderParser.js";
 import { findVariantProductCode } from "./variantMapping.js";
 
+const DEFAULT_SHIPPING_METHOD = "STANDARD SHIPPING-USPS";
+const BULK_SHIPPING_METHOD = "FAST   SHIPPING";
+
+function totalItemQuantity(order) {
+  return (order.items || []).reduce((total, item) => total + Math.max(0, Number(item.quantity) || 0), 0);
+}
+
+function shippingMethodForOrder(order) {
+  if (totalItemQuantity(order) >= 10) return BULK_SHIPPING_METHOD;
+  return order.shippingMethod || DEFAULT_SHIPPING_METHOD;
+}
+
 function normalizeSize(value) {
   return normalizeKey(value).replace(/x/g, "x");
 }
@@ -93,7 +105,7 @@ export function buildPrintbellePayload(order, catalog, artworkBaseUrl) {
   return {
     payload: {
       orderId: order.orderNumber,
-      shippingMethod: order.shippingMethod || "STANDARD SHIPPING",
+      shippingMethod: shippingMethodForOrder(order),
       shippingName: order.shippingName,
       shippingAddress1: order.shippingAddress1,
       shippingAddress2: order.shippingAddress2,
