@@ -7,7 +7,7 @@ function clean(value) {
 }
 
 function canonicalProductCode(value) {
-  const compact = clean(value).replace(/\s+/g, "").toUpperCase();
+  const compact = clean(value).replace(/_/g, "-").replace(/\s+/g, "").toUpperCase();
   return compact.replace(/^([A-Z]+)(\d+)$/, "$1-$2");
 }
 
@@ -55,7 +55,7 @@ function parseItem(lines, itemStart, nextItemStart = -1) {
   const shortPriceMatch = first.match(/^(\d+)\s+\(?\$\s*([\d,]+(?:\.\d{1,2})?)\)?$/);
   if (!match && !shortPriceMatch) return null;
   const quantity = Number(match?.[1] || shortPriceMatch[1]);
-  const standaloneSku = lines[itemStart + 1]?.match(/^[A-Z0-9-]{3,}$/i)?.[0];
+  const standaloneSku = lines[itemStart + 1]?.match(/^[A-Z0-9_-]{3,}$/i)?.[0];
   const inlineSku = !match ? lines[itemStart + 1]?.match(/^([A-Z0-9-]{3,})(?:\s|$)/i)?.[1] : "";
   const skuLine = standaloneSku || inlineSku;
   const sourceSku = canonicalProductCode(skuLine || match?.[2] || "");
@@ -79,16 +79,16 @@ function parseItem(lines, itemStart, nextItemStart = -1) {
   const itemEnd = nextItemStart > -1 ? nextItemStart : summaryEnd;
   const optionLines = lines.slice(itemStart, itemEnd > -1 ? itemEnd : Math.min(lines.length, itemStart + 16));
   const fullItemText = optionLines.join(" ");
-  const codeMatch = fullItemText.match(/\(([A-Z0-9-]{2,}(?:\s+[A-Z0-9-]{1,})?)\)/i);
-  const sizeMatch = fullItemText.match(/Size Options:\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Note:|$))/i);
+  const codeMatch = fullItemText.match(/\(([A-Z0-9_-]{2,}(?:\s+[A-Z0-9_-]{1,})?)\)/i);
+  const sizeMatch = fullItemText.match(/(?:Size Options|Choose Your Size(?: Options)?):\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Add personalization|Note:|$))/i);
   const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
-  const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Choice Graphic|Size Options|Note:|$))/gi)];
+  const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Choice Graphic|Size Options|Choose Your Size|Note:)|$)/gi)];
   const personalization = personalizationMatches.at(-1)?.[1]?.trim() || "";
-  const sizeRaw = sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "").trim() || "";
+  const sizeRaw = sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "").replace(/\s+\((?:Popular|Default|Recommended)\)\s*$/i, "").trim() || "";
   return {
     sourceSku,
     productCodeSource: canonicalProductCode(codeMatch?.[1] || sourceSku),
-    title: clean(titleParts.join(" ") || fullItemText.split(/(?:Size Options|Choose Your Color|Journal Color Options|PERSONALIZATION|Personalization|Add personalization):/i)[0]).replace(/\s*\|\s*/g, " | "),
+    title: clean(titleParts.join(" ") || fullItemText.split(/(?:Size Options|Choose Your Size|Choose Your Color|Journal Color Options|PERSONALIZATION|Personalization|Add personalization):/i)[0]).replace(/\s*\|\s*/g, " | "),
     quantity,
     price: Number((match?.[4] || shortPriceMatch?.[2] || "0").replace(/,/g, "")),
     sizeRaw: clean(sizeRaw),
@@ -110,11 +110,11 @@ function applyContinuationOptions(item, lines) {
   if (!extraText) return item;
   const fullItemText = `${item.rawText} ${extraText}`;
   const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
-  const sizeMatch = fullItemText.match(/Size Options:\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Note:|$))/i);
-  const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Choice Graphic|Size Options|Note:|$))/gi)];
+  const sizeMatch = fullItemText.match(/(?:Size Options|Choose Your Size(?: Options)?):\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Add personalization|Note:|$))/i);
+  const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Choice Graphic|Size Options|Choose Your Size|Note:)|$)/gi)];
   return {
     ...item,
-    sizeRaw: clean(sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "") || item.sizeRaw),
+    sizeRaw: clean(sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "").replace(/\s+\((?:Popular|Default|Recommended)\)\s*$/i, "") || item.sizeRaw),
     color: clean(colorMatch?.[1] || item.color),
     personalization: clean(personalizationMatches.at(-1)?.[1] || item.personalization),
     rawText: fullItemText

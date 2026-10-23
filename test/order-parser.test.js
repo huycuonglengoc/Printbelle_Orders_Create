@@ -79,6 +79,27 @@ test("parses Jewelry Storage color and personalization", async () => {
   assert.equal(order.items[0].personalization, "Iona");
 });
 
+test("parses underscore SKU and Choose Your Size options", () => {
+  const page = parsePageLines([
+    "Ship To: Example Customer Order #PB-SUNCATCHER",
+    "1 Main Street",
+    "Date 01/01/2026",
+    "Example City, IL 60477",
+    "User example",
+    "Qty Item Description Price",
+    "1 Retirement Gift for Her, Butterfly Suncatcher $45.98",
+    "SC_10",
+    "with Custom Name and Quote (SC_10)",
+    "Choose Your Size: 7.9in/20cm (Popular)",
+    "Personalization: Kathy",
+    "Total"
+  ], 1);
+  assert.equal(page.items[0].sourceSku, "SC-10");
+  assert.equal(page.items[0].productCodeSource, "SC-10");
+  assert.equal(page.items[0].sizeRaw, "7.9in/20cm");
+  assert.equal(page.items[0].personalization, "Kathy");
+});
+
 test("keeps one bulk item and raises quantity to the artwork count", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Notebook/input.pdf"));
   const artworks = [
