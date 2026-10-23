@@ -33,19 +33,18 @@ function findSpu(item, catalog) {
 function rulesForProduct(rules, productCode) {
   const normalizedProductCode = normalizeKey(productCode);
   const entries = Object.entries(rules || {});
-  const exact = entries.find(([key]) => normalizeKey(key) === normalizedProductCode);
+  const prefixesForKey = (key) => String(key || "").split(",").map((part) => normalizeKey(part)).filter(Boolean);
+  const exact = entries.find(([key]) => prefixesForKey(key).some((part) => part === normalizedProductCode));
   if (exact) return exact[1] || {};
 
   // Keep exact product-code mappings working, while allowing a prefix such as
   // GF to cover GF-10, GF-20, and future SKU variants. Prefer the longest
   // matching prefix when rules overlap (for example G and GF).
   const prefix = entries
-    .filter(([key]) => {
-      const normalizedKey = normalizeKey(key);
-      return normalizedKey && normalizedProductCode.startsWith(normalizedKey);
-    })
-    .sort(([left], [right]) => normalizeKey(right).length - normalizeKey(left).length)[0];
-  return prefix?.[1] || {};
+    .map(([key, value]) => ({ value, longestPrefix: Math.max(0, ...prefixesForKey(key).map((part) => part.length)), prefixes: prefixesForKey(key) }))
+    .filter((entry) => entry.longestPrefix && entry.prefixes.some((prefix) => normalizedProductCode.startsWith(prefix)))
+    .sort((left, right) => right.longestPrefix - left.longestPrefix)[0];
+  return prefix?.value || {};
 }
 
 function mapSize(item, catalog) {

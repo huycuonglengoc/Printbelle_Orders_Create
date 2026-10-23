@@ -45,6 +45,14 @@ test("maps sizes by SKU prefix", () => {
   assert.equal(payloads[0].skipped, false);
 });
 
+test("maps sizes by multiple comma-separated SKU prefixes", () => {
+  const order = { orderNumber: "PB-SIZE-MULTI-PREFIX", items: [{ productCodeSource: "JS-3", title: "Jewelry Storage", quantity: 1, sizeRaw: '2"x2"x3' }], artworks: [{ urlPath: "/storage.png" }] };
+  const catalog = { ...sampleCatalog, sizeMappings: { "GF, JS": { "2x2x3": "5X5X4CM" } }, spus: [{ spu: "UJBOX", name: "Jewelry Storage", skuPrefixes: ["JS"] }] };
+  const [built] = buildAllPayloads([order], catalog, "http://localhost:3000");
+  assert.equal(built.payload.items[0].size, "5X5X4CM");
+  assert.equal(built.skipped, false);
+});
+
 test("parses Jewelry Storage color and personalization", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Jewelry Storage/input.pdf"));
   const [order] = await parseOrders(pdf, []);
