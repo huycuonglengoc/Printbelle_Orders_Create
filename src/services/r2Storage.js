@@ -21,17 +21,34 @@ function publicUrlFor(key) {
   return `${config.r2.publicBaseUrl}/${encodedKey}`;
 }
 
+export function isDirectPublicArtworkUrl(value) {
+  try {
+    const artworkUrl = new URL(value);
+    const publicBase = new URL(config.r2.publicBaseUrl);
+    const basePath = publicBase.pathname.replace(/\/$/, "");
+    return artworkUrl.protocol === "https:"
+      && artworkUrl.origin === publicBase.origin
+      && artworkUrl.pathname.startsWith(`${basePath}/`)
+      && !artworkUrl.search
+      && !artworkUrl.hash;
+  } catch {
+    return false;
+  }
+}
+
 export function r2Status() {
   return {
     enabled: config.r2.enabled,
     requiredForImport: config.r2.requiredForImport,
-    publicBaseUrl: config.r2.publicBaseUrl
+    publicBaseUrl: config.r2.publicBaseUrl,
+    publicBaseUrlError: config.r2.publicBaseUrlError,
+    directPublicUrl: config.r2.enabled
   };
 }
 
 export async function uploadArtworkToR2({ key, buffer, contentType }) {
   const storageClient = getClient();
-  if (!storageClient) throw new Error("Cloudflare R2 is not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET and R2_PUBLIC_BASE_URL.");
+  if (!storageClient) throw new Error(`Cloudflare R2 direct public storage is not configured. ${config.r2.publicBaseUrlError || "Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET and R2_PUBLIC_BASE_URL."}`);
   await storageClient.send(new PutObjectCommand({
     Bucket: config.r2.bucket,
     Key: key,

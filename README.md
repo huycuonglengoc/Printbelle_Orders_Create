@@ -61,7 +61,7 @@ R2_PUBLIC_BASE_URL=https://artwork.example.com
 R2_REQUIRED=true
 ```
 
-`R2_PUBLIC_BASE_URL` phải là custom domain hoặc public `r2.dev` domain có thể truy cập từ bên ngoài. Không dùng URL quản trị hoặc endpoint S3 private trong cột artwork.
+`R2_PUBLIC_BASE_URL` phải là HTTPS custom domain hoặc public `r2.dev` domain có thể truy cập trực tiếp từ bên ngoài, không cần đăng nhập, token hoặc query signature. Không dùng URL quản trị hoặc endpoint S3 `*.r2.cloudflarestorage.com`; đó là endpoint API/private và có thể yêu cầu xác thực. Khi cấu hình sai, app sẽ không cho export để tránh tạo file Excel với artwork URL không dùng được.
 
 ## Printbelle API và dry-run
 

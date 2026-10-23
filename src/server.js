@@ -8,7 +8,7 @@ import { parseOrders } from "./services/orderParser.js";
 import { buildAllPayloads } from "./services/orderBuilder.js";
 import { buildImportRows, createImportWorkbook } from "./services/orderImportExporter.js";
 import { createOrder, getOrders, getProducts } from "./services/printbelleClient.js";
-import { r2Status, uploadArtworkToR2 } from "./services/r2Storage.js";
+import { isDirectPublicArtworkUrl, r2Status, uploadArtworkToR2 } from "./services/r2Storage.js";
 import { parseSuccessfulExportWorkbook } from "./services/variantMapping.js";
 
 const app = express();
@@ -93,13 +93,19 @@ app.post("/api/parse", upload.fields([{ name: "pdf", maxCount: 1 }, { name: "art
 app.post("/api/orders/export-import", async (req, res) => {
   try {
     if (config.r2.requiredForImport && !config.r2.enabled) {
-      return res.status(503).json({ error: "Cloudflare R2 is required for import export. Configure the R2 environment variables first.", r2: r2Status() });
+      return res.status(503).json({ error: "A direct public Cloudflare R2 URL is required for import export. Configure R2_PUBLIC_BASE_URL as an HTTPS custom domain or r2.dev URL.", r2: r2Status() });
     }
     const catalog = req.body?.catalog || config.catalog;
     const orders = req.body?.orders || [];
     const prepared = buildImportRows(orders, catalog, config.artworkBaseUrl);
     if (!prepared.rows.length) {
       return res.status(422).json({ error: "There are no valid order rows to export.", skipped: prepared.skipped });
+    }
+    if (config.r2.requiredForImport) {
+      const nonPublicRows = prepared.rows.filter((row) => !isDirectPublicArtworkUrl(row[16]));
+      if (nonPublicRows.length) {
+        return res.status(422).json({ error: "Every artwork must use a direct HTTPS public R2 URL without authentication or query signatures.", invalidArtworkRows: nonPublicRows.length, r2: r2Status() });
+      }
     }
     const buffer = await createImportWorkbook(prepared.rows, config.importTemplatePath);
     const filename = `printbelle-order-import-${new Date().toISOString().slice(0, 10)}.xlsx`;
