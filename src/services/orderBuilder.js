@@ -50,7 +50,18 @@ function rulesForProduct(rules, productCode) {
 function mapSize(item, catalog) {
   const rules = rulesForProduct(catalog.sizeMappings, item.productCodeSource);
   const exact = Object.entries(rules).find(([source]) => normalizeSize(source) === normalizeSize(item.sizeRaw))?.[1];
-  return exact || item.sizeRaw || "";
+  if (exact) return exact;
+  if (item.sizeRaw) return item.sizeRaw;
+
+  const productCode = normalizeKey(item.productCodeSource);
+  const defaults = (catalog.defaultSizeRules || [])
+    .filter((rule) => (String(rule?.skuPrefix || "").split(",").map((prefix) => normalizeKey(prefix)).filter(Boolean)).some((prefix) => productCode.startsWith(prefix)) && rule?.size)
+    .sort((left, right) => {
+      const leftPrefix = Math.max(0, ...String(left.skuPrefix).split(",").map((prefix) => normalizeKey(prefix).length));
+      const rightPrefix = Math.max(0, ...String(right.skuPrefix).split(",").map((prefix) => normalizeKey(prefix).length));
+      return rightPrefix - leftPrefix;
+    });
+  return defaults[0]?.size || "";
 }
 
 function mapColor(item, catalog) {

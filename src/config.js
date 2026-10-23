@@ -16,7 +16,8 @@ export function normalizeCatalog(catalog) {
     sizeMappings: catalog?.sizeMappings && typeof catalog.sizeMappings === "object" ? catalog.sizeMappings : {},
     colorMappings: catalog?.colorMappings && typeof catalog.colorMappings === "object" ? catalog.colorMappings : {},
     variantMappings: catalog?.variantMappings && typeof catalog.variantMappings === "object" ? catalog.variantMappings : {},
-    variantRules: Array.isArray(catalog?.variantRules) ? catalog.variantRules : []
+    variantRules: Array.isArray(catalog?.variantRules) ? catalog.variantRules : [],
+    defaultSizeRules: Array.isArray(catalog?.defaultSizeRules) ? catalog.defaultSizeRules : []
   };
 }
 

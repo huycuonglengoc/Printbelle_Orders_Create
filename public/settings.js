@@ -10,7 +10,7 @@ async function loadConfig() {
   state.config = await response.json();
   state.catalog = normalizeCatalog(state.config.catalog);
   $('#modeBadge').textContent = state.config.dryRun ? 'DRY-RUN · API not called' : 'LIVE · API enabled';
-  state.editor = createCatalogEditor({ catalog: state.catalog, spuRoot: '#spuEditorRoot', sizeRoot: '#sizeEditorRoot', variantRoot: '#variantEditorRoot' });
+  state.editor = createCatalogEditor({ catalog: state.catalog, spuRoot: '#spuEditorRoot', sizeRoot: '#sizeEditorRoot', variantRoot: '#variantEditorRoot', defaultSizeRoot: '#defaultSizeEditorRoot' });
 }
 
 function sync() { state.catalog = state.editor.sync(); return state.catalog; }
@@ -18,6 +18,7 @@ function sync() { state.catalog = state.editor.sync(); return state.catalog; }
 $('#addSpuButton').addEventListener('click', () => { state.editor.addSpu(); state.catalog = state.editor.catalog; document.querySelector('#spuEditorRoot [data-spu-card]:last-child input')?.focus(); });
 $('#addSizeMappingButton').addEventListener('click', () => { state.editor.addSizeMapping(); state.catalog = state.editor.catalog; document.querySelector('#sizeEditorRoot [data-size-group]:last-child [data-field="size-product"]')?.focus(); });
 $('#addVariantRuleButton').addEventListener('click', () => { state.editor.addVariantRule(); state.catalog = state.editor.catalog; document.querySelector('#variantEditorRoot [data-variant-rule]:last-child [data-field="variant-spu"]')?.focus(); });
+$('#addDefaultSizeRuleButton').addEventListener('click', () => { state.editor.addDefaultSizeRule(); state.catalog = state.editor.catalog; document.querySelector('#defaultSizeEditorRoot [data-default-size-rule]:last-child [data-field="default-size-prefix"]')?.focus(); });
 $('#spuEditorRoot').addEventListener('click', (event) => { const button = event.target.closest('[data-action="remove-spu"]'); if (!button) return; state.editor.removeSpu(Number(button.dataset.index)); state.catalog = state.editor.catalog; });
 $('#sizeEditorRoot').addEventListener('click', (event) => {
   const button = event.target.closest('[data-action]');
@@ -32,6 +33,12 @@ $('#variantEditorRoot').addEventListener('click', (event) => {
   const button = event.target.closest('[data-action="remove-variant-rule"]');
   if (!button) return;
   state.editor.removeVariantRule(Number(button.dataset.index));
+  state.catalog = state.editor.catalog;
+});
+$('#defaultSizeEditorRoot').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-action="remove-default-size-rule"]');
+  if (!button) return;
+  state.editor.removeDefaultSizeRule(Number(button.dataset.index));
   state.catalog = state.editor.catalog;
 });
 $('#variantImportInput').addEventListener('change', async (event) => {

@@ -121,6 +121,38 @@ test("maps combined Product_Code rules imported from a successful export", () =>
   assert.equal(built.payload.items[0].productCode, "ULCNP-Pink/5.8X8.5INCH");
 });
 
+test("uses a unique sized Product_Code rule when the PDF has no size", () => {
+  const order = {
+    orderNumber: "PB-VARIANT-NO-SIZE",
+    items: [{ productCodeSource: "EJ-7", title: "Notebook", quantity: 1, sizeRaw: "", color: "Green" }],
+    artworks: [{ urlPath: "/notebook.png" }]
+  };
+  const catalog = {
+    ...sampleCatalog,
+    spus: [{ spu: "ULCNP", name: "Notebook", aliases: ["notebook"] }],
+    variantRules: [{ spu: "ULCNP", skuPrefix: "EJ-7", size: "5.8X8.5INCH", color: "Green", productCode: "ULCNP-Green/5.8X8.5INCH" }]
+  };
+  const [built] = buildAllPayloads([order], catalog, "http://localhost:3000");
+  assert.equal(built.payload.items[0].productCode, "ULCNP-Green/5.8X8.5INCH");
+});
+
+test("uses a configured default size for a SKU prefix when PDF size is blank", () => {
+  const order = {
+    orderNumber: "PB-DEFAULT-SIZE",
+    items: [{ productCodeSource: "EJ-7", title: "Notebook", quantity: 1, sizeRaw: "", color: "Green" }],
+    artworks: [{ urlPath: "/notebook.png" }]
+  };
+  const catalog = {
+    ...sampleCatalog,
+    spus: [{ spu: "ULCNP", name: "Notebook", skuPrefixes: ["EJ"] }],
+    defaultSizeRules: [{ skuPrefix: "EJ-7, GF", size: "5.8X8.5INCH" }],
+    variantRules: [{ spu: "ULCNP", skuPrefix: "EJ-7", size: "5.8X8.5INCH", color: "Green", productCode: "ULCNP-Green/5.8X8.5INCH" }]
+  };
+  const [built] = buildAllPayloads([order], catalog, "http://localhost:3000");
+  assert.equal(built.payload.items[0].size, "5.8X8.5INCH");
+  assert.equal(built.payload.items[0].productCode, "ULCNP-Green/5.8X8.5INCH");
+});
+
 test("supports multiple SKU prefixes in one Product_Code rule", () => {
   const order = {
     orderNumber: "PB-MULTI-PREFIX",
