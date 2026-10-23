@@ -11,6 +11,30 @@ async function getConfig() {
 
 function refreshOrderSpuOptions() { if (state.orders.length) { readFormState(); renderOrders(); } }
 
+function normalizeMappingValue(value) {
+  return String(value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+async function applyAutomaticMappings(orders) {
+  const response = await fetch('/api/orders/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orders, catalog: state.catalog })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Could not apply catalog mappings.');
+  data.orders.forEach((entry, orderIndex) => {
+    const sourceOrder = orders[orderIndex];
+    (entry.payload?.items || []).forEach((mappedItem, itemIndex) => {
+      const item = sourceOrder?.items?.[itemIndex];
+      if (!item) return;
+      if (!item.spu && mappedItem.productSpu) item.spu = mappedItem.productSpu;
+      if (!item.sizeTarget && mappedItem.size && normalizeMappingValue(mappedItem.size) !== normalizeMappingValue(item.sizeRaw)) item.sizeTarget = mappedItem.size;
+      if (!item.colorTarget && mappedItem.color) item.colorTarget = mappedItem.color;
+    });
+  });
+}
+
 function renderOrders() {
   const spus = state.catalog?.spus || [];
   $('#ordersRoot').innerHTML = state.orders.map((order, orderIndex) => `
@@ -109,7 +133,7 @@ $('#pdfInput').addEventListener('change', (event) => { $('#pdfLabel').textConten
 $('#artworkInput').addEventListener('change', (event) => { $('#artworkLabel').textContent = event.target.files.length ? `${event.target.files.length} artwork files selected` : 'Choose artwork'; });
 $('#uploadForm').addEventListener('submit', async (event) => {
   event.preventDefault(); setStatus('#parseStatus', 'Reading PDF and matching artwork…');
-  try { const response = await fetch('/api/parse', { method:'POST', body:new FormData(event.currentTarget) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); state.orders=data.orders; renderOrders(); $('#reviewPanel').classList.remove('hidden'); $('#reviewPanel').scrollIntoView({behavior:'smooth'}); setStatus('#parseStatus', `Read ${state.orders.length} order(s).`, 'success'); } catch (error) { setStatus('#parseStatus', error.message, 'error'); }
+  try { const response = await fetch('/api/parse', { method:'POST', body:new FormData(event.currentTarget) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); state.orders=data.orders; await applyAutomaticMappings(state.orders); renderOrders(); $('#reviewPanel').classList.remove('hidden'); $('#reviewPanel').scrollIntoView({behavior:'smooth'}); setStatus('#parseStatus', `Read ${state.orders.length} order(s) and applied catalog mappings.`, 'success'); } catch (error) { setStatus('#parseStatus', error.message, 'error'); }
 });
 $('#previewButton').addEventListener('click', async () => { readFormState(); setStatus('#reviewStatus','Building payload preview…'); try { const response=await fetch('/api/orders/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orders:state.orders,catalog:state.catalog})}); const data=await response.json(); if(!response.ok) throw new Error(data.error); state.preview=data.orders; renderPreview(); setStatus('#reviewStatus','Payload preview is ready.','success'); } catch(error) { setStatus('#reviewStatus',error.message,'error'); } });
 $('#submitButton').addEventListener('click', () => { $('#previewButton').click(); });

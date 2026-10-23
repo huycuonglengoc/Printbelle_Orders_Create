@@ -20,11 +20,12 @@ function normalizeSize(value) {
 function findSpu(item, catalog) {
   const productCode = normalizeKey(item.productCodeSource);
   const haystack = normalizeKey(`${item.productCodeSource} ${item.title}`);
-  const prefixCandidate = (catalog.spus || []).find((entry) => (entry.skuPrefixes || []).some((prefix) => {
+  const values = (value) => Array.isArray(value) ? value : String(value || "").split(",");
+  const prefixCandidate = (catalog.spus || []).find((entry) => values(entry.skuPrefixes).some((prefix) => {
     const normalizedPrefix = normalizeKey(prefix);
     return normalizedPrefix && productCode.startsWith(normalizedPrefix);
   }));
-  const aliasCandidate = (catalog.spus || []).find((entry) => (entry.aliases || []).some((alias) => haystack.includes(normalizeKey(alias))));
+  const aliasCandidate = (catalog.spus || []).find((entry) => values(entry.aliases).some((alias) => haystack.includes(normalizeKey(alias))));
   const candidate = prefixCandidate || aliasCandidate;
   return candidate?.spu || "";
 }
