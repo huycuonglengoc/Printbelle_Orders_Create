@@ -31,6 +31,11 @@ footer { display:flex; justify-content:space-between; gap:20px; color:var(--mute
 .import-rule-bar small { color:var(--muted); font-size:11px; margin-top:3px; }
 .file-button { cursor:pointer; }
 .variant-editor { display:grid; gap:8px; margin:12px 0; }
+.variant-spu-group { border:1px solid var(--line); border-radius:9px; background:#fafbf9; overflow:hidden; }
+.variant-spu-group summary { display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer; padding:11px 12px; font-size:12px; font-weight:600; }
+.variant-spu-group summary::marker { color:var(--muted); }
+.variant-group-count { color:var(--muted); font:500 10px 'DM Mono',monospace; }
+.variant-group-body { display:grid; gap:8px; padding:0 8px 8px; }
 .variant-row { display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1.8fr auto; gap:8px; align-items:end; border:1px solid var(--line); border-radius:8px; padding:10px; background:#fff; }
 .default-size-row { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; border:1px solid var(--line); border-radius:8px; padding:10px; background:#fff; }
 .variant-row .text-button { margin-bottom:5px; }

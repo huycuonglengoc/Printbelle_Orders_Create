@@ -44,14 +44,24 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
 
     if (variantNode) {
       const rules = current.variantRules || [];
-      variantNode.innerHTML = rules.length ? rules.map((rule, index) => `<div class="variant-row" data-variant-rule="${index}">
-        <div class="editor-field"><label>SPU</label><input data-field="variant-spu" value="${escapeHtml(rule.spu)}" placeholder="ULCNP" /></div>
-        <div class="editor-field"><label>SKU prefixes <span class="optional">optional</span></label><input data-field="variant-prefix" value="${escapeHtml(rule.skuPrefix)}" placeholder="GF, JS" /><div class="editor-help">Separate prefixes with commas.</div></div>
-        <div class="editor-field"><label>Printbelle size <span class="optional">optional</span></label><input data-field="variant-size" value="${escapeHtml(rule.size)}" placeholder="5.8X8.5INCH" /><div class="editor-help">If the PDF has no size, a unique rule can still supply this size.</div></div>
-        <div class="editor-field"><label>Printbelle color <span class="optional">optional</span></label><input data-field="variant-color" value="${escapeHtml(rule.color)}" placeholder="Pink" /></div>
-        <div class="editor-field variant-code-field"><label>Output Product_Code</label><input data-field="variant-code" value="${escapeHtml(rule.productCode)}" placeholder="ULCNP-Pink/5.8X8.5INCH" /></div>
-        <button class="text-button" type="button" data-action="remove-variant-rule" data-index="${index}">Remove</button>
-      </div>`).join('') : '<div class="empty-editor">No Product_Code rules yet. Import a successful export or add one manually.</div>';
+      const groups = new Map();
+      rules.forEach((rule, index) => {
+        const groupKey = rule.spu?.trim() || '__no_spu__';
+        const group = groups.get(groupKey) || [];
+        group.push({ rule, index });
+        groups.set(groupKey, group);
+      });
+      variantNode.innerHTML = groups.size ? [...groups.entries()].map(([groupKey, group]) => `<details class="variant-spu-group"${groupKey === '__no_spu__' ? ' open' : ''}>
+        <summary><span>${escapeHtml(groupKey === '__no_spu__' ? 'SPU not set' : groupKey)}</span><span class="variant-group-count">${group.length} rule${group.length === 1 ? '' : 's'}</span></summary>
+        <div class="variant-group-body">${group.map(({ rule, index }) => `<div class="variant-row" data-variant-rule="${index}">
+          <div class="editor-field"><label>SPU</label><input data-field="variant-spu" value="${escapeHtml(rule.spu)}" placeholder="ULCNP" /></div>
+          <div class="editor-field"><label>SKU prefixes <span class="optional">optional</span></label><input data-field="variant-prefix" value="${escapeHtml(rule.skuPrefix)}" placeholder="GF, JS" /><div class="editor-help">Separate prefixes with commas.</div></div>
+          <div class="editor-field"><label>Printbelle size <span class="optional">optional</span></label><input data-field="variant-size" value="${escapeHtml(rule.size)}" placeholder="5.8X8.5INCH" /><div class="editor-help">If the PDF has no size, a unique rule can still supply this size.</div></div>
+          <div class="editor-field"><label>Printbelle color <span class="optional">optional</span></label><input data-field="variant-color" value="${escapeHtml(rule.color)}" placeholder="Pink" /></div>
+          <div class="editor-field variant-code-field"><label>Output Product_Code</label><input data-field="variant-code" value="${escapeHtml(rule.productCode)}" placeholder="ULCNP-Pink/5.8X8.5INCH" /></div>
+          <button class="text-button" type="button" data-action="remove-variant-rule" data-index="${index}">Remove</button>
+        </div>`).join('')}</div>
+      </details>`).join('') : '<div class="empty-editor">No Product_Code rules yet. Import a successful export or add one manually.</div>';
     }
 
     if (defaultSizeNode) {
