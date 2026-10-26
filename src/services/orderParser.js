@@ -156,7 +156,11 @@ export function parsePageLines(lines, pageNumber) {
   return { id: `${shipping.orderNumber || "page"}-${pageNumber}`, pageNumber, ...shipping, items };
 }
 
-function matchArtworks(orders, artworkFiles) {
+function expectedArtworkCount(order) {
+  return Math.max(1, (order.items || []).reduce((total, item) => total + Math.max(1, Number(item.quantity) || 1), 0));
+}
+
+export function matchArtworks(orders, artworkFiles) {
   const groups = new Map();
   for (const file of artworkFiles) {
     const base = path.basename(file.originalname || file.filename || "");
@@ -168,17 +172,37 @@ function matchArtworks(orders, artworkFiles) {
     list.push({ ...file, path: file.path || file.savedPath, originalname: base });
     groups.set(customerKey, list);
   }
+  const offsets = new Map();
+  const ordersByCustomer = new Map();
+  for (const order of orders) {
+    const key = normalizeKey(order.shippingName);
+    const group = ordersByCustomer.get(key) || [];
+    group.push(order);
+    ordersByCustomer.set(key, group);
+  }
   for (const order of orders) {
     const key = normalizeKey(order.shippingName);
     const files = groups.get(key) || [];
     files.sort((a, b) => a.originalname.localeCompare(b.originalname, undefined, { numeric: true }));
-    order.artworks = files.map((file) => ({
+    const customerOrders = ordersByCustomer.get(key) || [order];
+    const orderIndex = customerOrders.indexOf(order);
+    const offset = offsets.get(key) || 0;
+    let assignedFiles = files;
+    if (customerOrders.length > 1) {
+      const remainingOrders = customerOrders.length - orderIndex - 1;
+      const requested = expectedArtworkCount(order);
+      const availableForOrder = Math.max(0, files.length - offset - remainingOrders);
+      const take = Math.min(requested, availableForOrder);
+      assignedFiles = files.slice(offset, offset + take);
+      offsets.set(key, offset + take);
+    }
+    order.artworks = assignedFiles.map((file) => ({
       filename: file.originalname,
       urlPath: file.urlPath || "",
       publicUrl: file.publicUrl || "",
       storageKey: file.storageKey || ""
     }));
-    if (!files.length) order.errors = [...(order.errors || []), { message: `No artwork matched ${order.shippingName}.`, type: "artwork" }];
+    if (!assignedFiles.length) order.errors = [...(order.errors || []), { message: `No artwork matched ${order.shippingName}.`, type: "artwork" }];
   }
   return orders.map(assignArtworks);
 }

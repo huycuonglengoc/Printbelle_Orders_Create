@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseOrders, parsePageLines } from "../src/services/orderParser.js";
+import { matchArtworks, parseOrders, parsePageLines } from "../src/services/orderParser.js";
 import { buildAllPayloads } from "../src/services/orderBuilder.js";
 import { buildImportRows } from "../src/services/orderImportExporter.js";
 import { assignArtworks } from "../src/services/artworkAssignment.js";
@@ -165,6 +165,23 @@ test("assigns multiple items top-down and rejects a mismatch", () => {
   const invalid = assignArtworks({ shippingName: "A", items: [{ quantity: 1 }, { quantity: 1 }], artworks: files.slice(0, 1) });
   assert.equal(invalid.valid, false);
   assert.match(invalid.errors.at(-1).message, /2 items but 1 artworks/);
+});
+
+test("partitions artworks across separate orders with the same customer name", () => {
+  const orders = [
+    { orderNumber: "PB-SAME-NAME-1", shippingName: "Meghan Nagle", items: [{ quantity: 1 }] },
+    { orderNumber: "PB-SAME-NAME-2", shippingName: "Meghan Nagle", items: [{ quantity: 1 }] }
+  ];
+  const matched = matchArtworks(orders, [
+    { originalname: "1_Meghan Nagle_0.png", urlPath: "/meghan-1.png" },
+    { originalname: "2_Meghan Nagle_0.png", urlPath: "/meghan-2.png" }
+  ]);
+  assert.deepEqual(matched.map((order) => order.artworks.map((file) => file.filename)), [
+    ["1_Meghan Nagle_0.png"],
+    ["2_Meghan Nagle_0.png"]
+  ]);
+  assert.deepEqual(matched.map((order) => order.items[0].quantity), [1, 1]);
+  assert.deepEqual(matched.map((order) => order.valid), [true, true]);
 });
 
 test("builds import-template rows with the R2 artwork URL", () => {
