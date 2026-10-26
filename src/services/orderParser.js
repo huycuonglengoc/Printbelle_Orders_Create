@@ -17,10 +17,17 @@ function normalizeKey(value) {
 
 function parseCityLine(lines, startIndex) {
   const candidate = lines.slice(startIndex).join(" ").replace(/(\d{5})\s+(\d{4})(?=\s+(?:US|User)\b)/g, "$1-$2");
-  const match = candidate.match(/([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-?\s*\d{4})?)/i);
+  const match = candidate.match(/([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-?\s*\d{4})?|[A-Z]\d[A-Z]\s?\d[A-Z]\d)/i);
   if (!match) return { city: "", province: "", zip: "", countryCode: "US" };
-  const zipDigits = match[3].replace(/\s|-/g, "");
-  return { city: clean(match[1]), province: match[2].toUpperCase(), zip: zipDigits.length === 9 ? `${zipDigits.slice(0, 5)}-${zipDigits.slice(5)}` : zipDigits, countryCode: "US" };
+  const postalCode = clean(match[3]).toUpperCase();
+  const isCanadianPostalCode = /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/i.test(postalCode);
+  const zipDigits = postalCode.replace(/\s|-/g, "");
+  return {
+    city: clean(match[1]),
+    province: match[2].toUpperCase(),
+    zip: isCanadianPostalCode ? `${zipDigits.slice(0, 3)} ${zipDigits.slice(3)}` : zipDigits.length === 9 ? `${zipDigits.slice(0, 5)}-${zipDigits.slice(5)}` : zipDigits,
+    countryCode: isCanadianPostalCode ? "CA" : "US"
+  };
 }
 
 function parseShipping(lines, headerIndex) {
@@ -84,7 +91,7 @@ function parseItem(lines, itemStart, nextItemStart = -1) {
   const fullItemText = optionLines.join(" ");
   const codeMatch = fullItemText.match(/\(([A-Z0-9_-]{2,}(?:\s+[A-Z0-9_-]{1,})?)\)/i);
   const sizeMatch = fullItemText.match(/(?:Size Options|Choose Your Size(?: Options)?):\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Add personalization|Note:|$))/i);
-  const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Jewelry Box Options|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
+  const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Jewelry Box Options|Notebooks? Colors?|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
   const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Font Options|Font Color Options|Choice Graphic|Graphic Options|Jewelry Box Options|Size Options|Choose Your Size|Note:)|$)/gi)];
   const personalization = personalizationMatches.at(-1)?.[1]?.trim() || "";
   const sizeRaw = sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "").replace(/\s+\((?:Popular|Default|Recommended)\)\s*$/i, "").trim() || "";
@@ -113,7 +120,7 @@ function applyContinuationOptions(item, lines) {
   const extraText = lines.map(clean).filter(Boolean).join(" ");
   if (!extraText) return item;
   const fullItemText = `${item.rawText} ${extraText}`;
-  const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Jewelry Box Options|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
+  const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Jewelry Box Options|Notebooks? Colors?|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
   const sizeMatch = fullItemText.match(/(?:Size Options|Choose Your Size(?: Options)?):\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Add personalization|Note:|$))/i);
   const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Font Options|Font Color Options|Choice Graphic|Graphic Options|Jewelry Box Options|Size Options|Choose Your Size|Note:)|$)/gi)];
   return {

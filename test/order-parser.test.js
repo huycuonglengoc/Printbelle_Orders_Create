@@ -140,6 +140,28 @@ test("parses items without a printed price using the following SKU line", () => 
   assert.equal(page.items[0].personalization, "Mia");
 });
 
+test("parses Canadian addresses and Notebooks Colors", () => {
+  const page = parsePageLines([
+    "Ship To: Canadian Customer Order #PB-CA",
+    "30 Central Ave",
+    "Date 01/01/2026",
+    "Elliot Lake, ON P5A 2G1",
+    "CA User example",
+    "Qty Item Description Price",
+    "1 Custom Letters to My Little Boy Leather",
+    "NB15",
+    "Notebook, New Mom Keepsake Journal, Gift for Mom (NB15)",
+    "Notebooks Colors: Brown",
+    "Personalization: Liam",
+    "Total"
+  ], 1);
+  assert.equal(page.city, "Elliot Lake");
+  assert.equal(page.province, "ON");
+  assert.equal(page.zip, "P5A 2G1");
+  assert.equal(page.countryCode, "CA");
+  assert.equal(page.items[0].color, "Brown");
+});
+
 test("keeps one bulk item and raises quantity to the artwork count", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Notebook/input.pdf"));
   const artworks = [
