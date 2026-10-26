@@ -117,6 +117,29 @@ test("parses underscore SKU and Choose Your Size options", () => {
   assert.equal(page.items[0].personalization, "Kathy");
 });
 
+test("parses items without a printed price using the following SKU line", () => {
+  const page = parsePageLines([
+    "Ship To: Example Customer Order #PB-JEWELRY",
+    "1 Main Street",
+    "Date 01/01/2026",
+    "Example City, NV 89139",
+    "User example",
+    "Qty Item Description Price",
+    "1 Personalized Floral Velvet Jewelry Box,",
+    "JEW9",
+    "Daughter Birthday Gift, Milestone Birthday Keepsake (JEW9)",
+    "Jewelry Box Options: Pink",
+    "Personalization: Mia",
+    "Font Options: 6",
+    "Graphic Options: 9",
+    "Total"
+  ], 1);
+  assert.equal(page.items.length, 1);
+  assert.equal(page.items[0].productCodeSource, "JEW-9");
+  assert.equal(page.items[0].color, "Pink");
+  assert.equal(page.items[0].personalization, "Mia");
+});
+
 test("keeps one bulk item and raises quantity to the artwork count", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Notebook/input.pdf"));
   const artworks = [
