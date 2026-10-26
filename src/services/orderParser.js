@@ -18,7 +18,11 @@ function normalizeKey(value) {
 function parseCityLine(lines, startIndex) {
   const candidate = lines.slice(startIndex).join(" ").replace(/(\d{5})\s+(\d{4})(?=\s+(?:US|User)\b)/g, "$1-$2");
   const match = candidate.match(/([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-?\s*\d{4})?|[A-Z]\d[A-Z]\s?\d[A-Z]\d)/i);
-  if (!match) return { city: "", province: "", zip: "", countryCode: "US" };
+  const countryPostalMatch = candidate.match(/([^,]+),\s*(\d{4,6})\s+(CH)\b/i);
+  if (!match && !countryPostalMatch) return { city: "", province: "", zip: "", countryCode: "US" };
+  if (countryPostalMatch) {
+    return { city: clean(countryPostalMatch[1]), province: "", zip: countryPostalMatch[2], countryCode: "CH" };
+  }
   const postalCode = clean(match[3]).toUpperCase();
   const isCanadianPostalCode = /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/i.test(postalCode);
   const zipDigits = postalCode.replace(/\s|-/g, "");
@@ -42,7 +46,7 @@ function parseShipping(lines, headerIndex) {
   const userLineIndex = afterDate.findIndex((line) => /\bUser\b/i.test(line));
   const userLine = userLineIndex > -1 ? afterDate[userLineIndex] : afterDate.at(-1) || "";
   const userMatch = userLine.match(/\bUser\s+([\w-]+)/i);
-  const cityStart = afterDate.findIndex((line) => /,\s*[A-Z]{2}\b/i.test(line));
+  const cityStart = afterDate.findIndex((line) => /,\s*[A-Z]{2}\b/i.test(line) || /,\s*\d{4,6}\s+[A-Z]{2}\b/i.test(line));
   const location = parseCityLine(afterDate, cityStart > -1 ? cityStart : 0);
   const address2Lines = afterDate.slice(0, cityStart > -1 ? cityStart : userLineIndex > -1 ? userLineIndex : afterDate.length)
     .filter((line) => line && !/^US\b/i.test(line) && !/^Ship Date/i.test(line));

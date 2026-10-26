@@ -162,6 +162,27 @@ test("parses Canadian addresses and Notebooks Colors", () => {
   assert.equal(page.items[0].color, "Brown");
 });
 
+test("parses Swiss addresses with postal code before CH", () => {
+  const page = parsePageLines([
+    "Ship To: Swiss Customer Order #PB-CH",
+    "Via Campeun 32",
+    "Date 01/01/2026",
+    "Rhäzüns, 7403 CH",
+    "User example",
+    "Qty Item Description Price",
+    "1 Personalized Floral Velvet Jewelry Box,",
+    "JEW9",
+    "Daughter Birthday Gift (JEW9)",
+    "Jewelry Box Options: Pink",
+    "Total"
+  ], 1);
+  assert.equal(page.city, "Rhäzüns");
+  assert.equal(page.province, "");
+  assert.equal(page.zip, "7403");
+  assert.equal(page.countryCode, "CH");
+  assert.equal(page.shippingAddress2, "");
+});
+
 test("keeps one bulk item and raises quantity to the artwork count", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Notebook/input.pdf"));
   const artworks = [
