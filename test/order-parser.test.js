@@ -183,7 +183,7 @@ test("parses Swiss addresses with postal code before CH", () => {
   assert.equal(page.shippingAddress2, "");
 });
 
-test("does not append the next metadata line to a US ZIP code", () => {
+test("merges a wrapped US ZIP+4 suffix from the next line", () => {
   const page = parsePageLines([
     "Ship To: felicia b graham Order #4213405104",
     "2932 GARFIELD TER NW",
@@ -202,9 +202,32 @@ test("does not append the next metadata line to a US ZIP code", () => {
   assert.equal(page.orderNumber, "4213405104");
   assert.equal(page.city, "WASHINGTON");
   assert.equal(page.province, "DC");
-  assert.equal(page.zip, "20008");
+  assert.equal(page.zip, "20008-3507");
   assert.equal(page.countryCode, "US");
   assert.equal(page.shippingAddress2, "");
+});
+
+test("merges a wrapped ZIP+4 when User metadata is on the city line", () => {
+  const page = parsePageLines([
+    "Ship To: Marilyn Penna Order #4210285367",
+    "2360 SEVEN MILE FERRY",
+    "Date 10/24/2026",
+    "R D",
+    "CLARKSVILLE, TN 37040 User 36154818",
+    "8013 US Ship Date",
+    "Qty Item Description Price",
+    "1 Personalized Floral Jewelry Box with Drawer, $59.98",
+    "S1",
+    "Wildflower Jewelry Organizer with Custom Name (S1)",
+    "COLOR OPTIONS: Green",
+    "Total"
+  ], 1);
+  assert.equal(page.orderNumber, "4210285367");
+  assert.equal(page.city, "CLARKSVILLE");
+  assert.equal(page.province, "TN");
+  assert.equal(page.zip, "37040-8013");
+  assert.equal(page.countryCode, "US");
+  assert.equal(page.shippingAddress2, "R D");
 });
 
 test("keeps one bulk item and raises quantity to the artwork count", async () => {
