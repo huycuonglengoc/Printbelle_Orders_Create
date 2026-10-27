@@ -183,6 +183,30 @@ test("parses Swiss addresses with postal code before CH", () => {
   assert.equal(page.shippingAddress2, "");
 });
 
+test("does not append the next metadata line to a US ZIP code", () => {
+  const page = parsePageLines([
+    "Ship To: felicia b graham Order #4213405104",
+    "2932 GARFIELD TER NW",
+    "Date 10/25/2026",
+    "WASHINGTON, DC 20008",
+    "3507 US",
+    "User 1109933771",
+    "Ship Date",
+    "Qty Item Description Price",
+    "1 Personalized Floral Jewelry Box with Drawer, $59.98",
+    "S1",
+    "Wildflower Jewelry Organizer with Custom Name (S1)",
+    "COLOR OPTIONS: Green",
+    "Total"
+  ], 2);
+  assert.equal(page.orderNumber, "4213405104");
+  assert.equal(page.city, "WASHINGTON");
+  assert.equal(page.province, "DC");
+  assert.equal(page.zip, "20008");
+  assert.equal(page.countryCode, "US");
+  assert.equal(page.shippingAddress2, "");
+});
+
 test("keeps one bulk item and raises quantity to the artwork count", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Notebook/input.pdf"));
   const artworks = [

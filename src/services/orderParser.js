@@ -16,7 +16,10 @@ function normalizeKey(value) {
 }
 
 function parseCityLine(lines, startIndex) {
-  const candidate = lines.slice(startIndex).join(" ").replace(/(\d{5})\s+(\d{4})(?=\s+(?:US|User)\b)/g, "$1-$2");
+  // Parse only the city/postal line. Following lines can contain unrelated
+  // metadata (for example `3507 US` before the User field) and must not be
+  // interpreted as a ZIP+4 suffix.
+  const candidate = lines[startIndex] || "";
   const match = candidate.match(/([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-?\s*\d{4})?|[A-Z]\d[A-Z]\s?\d[A-Z]\d)/i);
   const countryPostalMatch = candidate.match(/([^,]+),\s*(\d{4,6})\s+(CH)\b/i);
   if (!match && !countryPostalMatch) return { city: "", province: "", zip: "", countryCode: "US" };
