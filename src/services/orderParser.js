@@ -21,7 +21,8 @@ function parseCityLine(lines, startIndex) {
   // four-digit country line; other following metadata must remain separate.
   const cityLine = (lines[startIndex] || "").replace(/\s+User\b.*$/i, "");
   const nextLine = lines[startIndex + 1] || "";
-  const candidate = `${cityLine}${/^\d{4}\s+US\b/i.test(nextLine) ? ` ${nextLine}` : ""}`
+  const wrappedUsPostalLine = /^(?:\d{4}|\d{5}(?:-?\s*\d{4})?)\s+US\b/i.test(nextLine);
+  const candidate = `${cityLine}${wrappedUsPostalLine ? ` ${nextLine}` : ""}`
     .replace(/(\d{5})\s+(\d{4})(?=\s+(?:US|User)\b)/g, "$1-$2");
   const match = candidate.match(/([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-?\s*\d{4})?|[A-Z]\d[A-Z]\s?\d[A-Z]\d)/i);
   const countryPostalMatch = candidate.match(/([^,]+),\s*(\d{4,6})\s+(CH)\b/i);

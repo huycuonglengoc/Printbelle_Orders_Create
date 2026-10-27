@@ -230,6 +230,28 @@ test("merges a wrapped ZIP+4 when User metadata is on the city line", () => {
   assert.equal(page.shippingAddress2, "R D");
 });
 
+test("merges a wrapped nine-digit ZIP when User metadata is on the city line", () => {
+  const page = parsePageLines([
+    "Ship To: Susana Alejandra Peralta Order #4213729486",
+    "6349 MIDDLETON ST",
+    "Date 10/26/2026",
+    "C",
+    "HUNTINGTON PK, CA User 953640612",
+    "902553817 US Ship Date",
+    "Qty Item Description Price",
+    "1 Personalized Floral Jewelry Box with Drawer, $59.98",
+    "S1",
+    "Wildflower Jewelry Organizer with Custom Name (S1)",
+    "COLOR OPTIONS: Green",
+    "Total"
+  ], 1);
+  assert.equal(page.city, "HUNTINGTON PK");
+  assert.equal(page.province, "CA");
+  assert.equal(page.zip, "90255-3817");
+  assert.equal(page.countryCode, "US");
+  assert.equal(page.shippingAddress2, "C");
+});
+
 test("keeps one bulk item and raises quantity to the artwork count", async () => {
   const pdf = await fs.readFile(path.join(root, "Order/Notebook/input.pdf"));
   const artworks = [
