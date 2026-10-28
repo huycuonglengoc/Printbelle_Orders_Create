@@ -6,6 +6,15 @@ function clean(value) {
   return String(value || "").replace(/[\u00ad\u00a0]/g, " ").replace(/[­]/g, "-").replace(/\s+/g, " ").trim();
 }
 
+function cleanSizeValue(value) {
+  const parsed = clean(value);
+  if (/^(?:Large|Small)$/i.test(parsed)) return parsed;
+  return parsed
+    .replace(/:?(?:Large|Small)\s*$/i, "")
+    .replace(/\s+\((?:Popular|Default|Recommended)\)\s*$/i, "")
+    .trim();
+}
+
 function canonicalProductCode(value) {
   const compact = clean(value).replace(/_/g, "-").replace(/\s+/g, "").toUpperCase();
   return compact.replace(/^([A-Z]+)(\d+)$/, "$1-$2");
@@ -102,11 +111,11 @@ function parseItem(lines, itemStart, nextItemStart = -1) {
   const optionLines = lines.slice(itemStart, itemEnd > -1 ? itemEnd : Math.min(lines.length, itemStart + 16));
   const fullItemText = optionLines.join(" ");
   const codeMatch = fullItemText.match(/\(([A-Z0-9_-]{2,}(?:\s+[A-Z0-9_-]{1,})?)\)/i);
-  const sizeMatch = fullItemText.match(/(?:Size Options|Choose Your Size(?: Options)?):\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Add personalization|Note:|$))/i);
+  const sizeMatch = fullItemText.match(/(?:Size Options|Choose Your Size(?: Options)?):\s*([^\n]+?)(?=\s+(?:Journal Color Options|Color Options|Choose|PERSONALIZATION|Personalization|Add personalization|Note:|$))/i);
   const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Jewelry Box Options|Notebooks? Colors?|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
   const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Font Options|Font Color Options|Choice Graphic|Graphic Options|Jewelry Box Options|Size Options|Choose Your Size|Note:)|$)/gi)];
   const personalization = personalizationMatches.at(-1)?.[1]?.trim() || "";
-  const sizeRaw = sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "").replace(/\s+\((?:Popular|Default|Recommended)\)\s*$/i, "").trim() || "";
+  const sizeRaw = cleanSizeValue(sizeMatch?.[1] || "");
   return {
     sourceSku,
     productCodeSource: canonicalProductCode(skuLine || codeMatch?.[1] || sourceSku),
@@ -133,11 +142,11 @@ function applyContinuationOptions(item, lines) {
   if (!extraText) return item;
   const fullItemText = `${item.rawText} ${extraText}`;
   const colorMatch = fullItemText.match(/(?:Choose Your Color Options|Choose Your Color|Choose Color Options|Journal Color Options|Jewelry Box Options|Notebooks? Colors?|Color Options):\s*([^\n]+?)(?=\s+(?:PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Font Options|Choice Graphic Options|Choice Graphic|Size Options|Note:|$))/i);
-  const sizeMatch = fullItemText.match(/(?:Size Options|Choose Your Size(?: Options)?):\s*([^\n]+?)(?=\s+(?:Choose|PERSONALIZATION|Personalization|Add personalization|Note:|$))/i);
+  const sizeMatch = fullItemText.match(/(?:Size Options|Choose Your Size(?: Options)?):\s*([^\n]+?)(?=\s+(?:Journal Color Options|Color Options|Choose|PERSONALIZATION|Personalization|Add personalization|Note:|$))/i);
   const personalizationMatches = [...fullItemText.matchAll(/(?:PERSONALIZATION|Personalization|Add personalization[^:]*):\s*(.+?)(?=\s+(?:Journal Color|Choose a font|Choose font color|Font Options|Font Color Options|Choice Graphic|Graphic Options|Jewelry Box Options|Size Options|Choose Your Size|Note:)|$)/gi)];
   return {
     ...item,
-    sizeRaw: clean(sizeMatch?.[1]?.replace(/:?(?:Large|Small)\s*$/i, "").replace(/\s+\((?:Popular|Default|Recommended)\)\s*$/i, "") || item.sizeRaw),
+    sizeRaw: cleanSizeValue(sizeMatch?.[1] || item.sizeRaw),
     color: clean(colorMatch?.[1] || item.color),
     personalization: clean(personalizationMatches.at(-1)?.[1] || item.personalization),
     rawText: fullItemText

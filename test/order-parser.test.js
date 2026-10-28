@@ -117,6 +117,27 @@ test("parses underscore SKU and Choose Your Size options", () => {
   assert.equal(page.items[0].personalization, "Kathy");
 });
 
+test("stops Flower Pot size before Color Options", () => {
+  const page = parsePageLines([
+    "Ship To: Flower Pot Customer Order #PB-FLOWER-POT",
+    "1 Main Street",
+    "Date 01/01/2026",
+    "Las Vegas, NV 89139",
+    "User example",
+    "Qty Item Description Price",
+    "1 Godmother Proposal Gift, Personalized Photo",
+    "GP20",
+    "Glass Flower Pot, Will You Be My Godmother Keepsake (GP20)",
+    "Size Options: Large",
+    "Color Options: Pink",
+    "Personalization: Sophia's Godmother",
+    "Total"
+  ], 1);
+  assert.equal(page.items[0].productCodeSource, "GP-20");
+  assert.equal(page.items[0].sizeRaw, "Large");
+  assert.equal(page.items[0].color, "Pink");
+});
+
 test("parses items without a printed price using the following SKU line", () => {
   const page = parsePageLines([
     "Ship To: Example Customer Order #PB-JEWELRY",
