@@ -223,11 +223,12 @@ test("merges a wrapped ZIP+4 when User metadata is on the city line", () => {
     "Total"
   ], 1);
   assert.equal(page.orderNumber, "4210285367");
+  assert.equal(page.shippingAddress1, "2360 SEVEN MILE FERRY R D");
   assert.equal(page.city, "CLARKSVILLE");
   assert.equal(page.province, "TN");
   assert.equal(page.zip, "37040-8013");
   assert.equal(page.countryCode, "US");
-  assert.equal(page.shippingAddress2, "R D");
+  assert.equal(page.shippingAddress2, "");
 });
 
 test("merges a wrapped nine-digit ZIP when User metadata is on the city line", () => {
@@ -245,11 +246,12 @@ test("merges a wrapped nine-digit ZIP when User metadata is on the city line", (
     "COLOR OPTIONS: Green",
     "Total"
   ], 1);
+  assert.equal(page.shippingAddress1, "6349 MIDDLETON ST C");
   assert.equal(page.city, "HUNTINGTON PK");
   assert.equal(page.province, "CA");
   assert.equal(page.zip, "90255-3817");
   assert.equal(page.countryCode, "US");
-  assert.equal(page.shippingAddress2, "C");
+  assert.equal(page.shippingAddress2, "");
 });
 
 test("keeps one bulk item and raises quantity to the artwork count", async () => {

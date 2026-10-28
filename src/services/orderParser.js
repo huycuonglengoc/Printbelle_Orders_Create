@@ -57,12 +57,13 @@ function parseShipping(lines, headerIndex) {
   const location = parseCityLine(afterDate, cityStart > -1 ? cityStart : 0);
   const address2Lines = afterDate.slice(0, cityStart > -1 ? cityStart : userLineIndex > -1 ? userLineIndex : afterDate.length)
     .filter((line) => line && !/^US\b/i.test(line) && !/^Ship Date/i.test(line));
+  const address2 = clean(address2Lines.join(" "));
   return {
     shippingName,
     orderNumber,
     userId: userMatch?.[1] || "",
-    shippingAddress1: address1,
-    shippingAddress2: clean(address2Lines.join(" ")),
+    shippingAddress1: clean([address1, address2].filter(Boolean).join(" ")),
+    shippingAddress2: "",
     ...location
   };
 }
