@@ -204,6 +204,29 @@ test("parses Swiss addresses with postal code before CH", () => {
   assert.equal(page.shippingAddress2, "");
 });
 
+test("parses international city and postal country lines", () => {
+  const page = parsePageLines([
+    "Ship To: Petra Palmer Order #4215556364",
+    "Habelschwerdter Str. 12",
+    "Date 10/28/2026",
+    "Schoeppingen, Muenster",
+    "48624 DE User 80461189",
+    "Ship Date",
+    "Qty Item Description Price",
+    "1 Personalized Floral Velvet Jewelry Box,",
+    "JEW9",
+    "Daughter Birthday Gift, Milestone Birthday Keepsake (JEW9)",
+    "Jewelry Box Options: Pink",
+    "Total"
+  ], 1);
+  assert.equal(page.shippingAddress1, "Habelschwerdter Str. 12");
+  assert.equal(page.shippingAddress2, "");
+  assert.equal(page.city, "Schoeppingen");
+  assert.equal(page.province, "Muenster");
+  assert.equal(page.zip, "48624");
+  assert.equal(page.countryCode, "DE");
+});
+
 test("merges a wrapped US ZIP+4 suffix from the next line", () => {
   const page = parsePageLines([
     "Ship To: felicia b graham Order #4213405104",
