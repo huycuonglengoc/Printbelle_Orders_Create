@@ -3,6 +3,7 @@ import { findVariantProductCode } from "./variantMapping.js";
 import { skuPrefixMatches, splitSkuPrefixes } from "./skuPrefix.js";
 
 const DEFAULT_SHIPPING_METHOD = "STANDARD SHIPPING-USPS";
+const INTERNATIONAL_SHIPPING_METHOD = "STANDARD SHIPPING";
 const BULK_SHIPPING_METHOD = "FAST   SHIPPING";
 
 function totalItemQuantity(order) {
@@ -10,6 +11,7 @@ function totalItemQuantity(order) {
 }
 
 function shippingMethodForOrder(order) {
+  if (String(order.countryCode || "US").toUpperCase() !== "US") return INTERNATIONAL_SHIPPING_METHOD;
   if (totalItemQuantity(order) >= 10) return BULK_SHIPPING_METHOD;
   return order.shippingMethod || DEFAULT_SHIPPING_METHOD;
 }

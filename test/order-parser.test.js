@@ -451,6 +451,18 @@ test("selects shipping method from total item quantity", () => {
   assert.equal(buildAllPayloads([makeOrder(10)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "FAST   SHIPPING");
 });
 
+test("uses Standard Shipping for every non-US destination", () => {
+  const makeOrder = (countryCode, quantity) => ({
+    orderNumber: `PB-INTERNATIONAL-${countryCode}-${quantity}`,
+    countryCode,
+    items: [{ productCodeSource: "JEW-9", title: "Jewelry Storage", quantity, sizeRaw: "" }],
+    artworks: [{ urlPath: "/jewelry.png" }]
+  });
+  const catalog = { ...sampleCatalog, spus: [{ spu: "UJBOX", name: "Jewelry Storage", skuPrefixes: ["JEW"] }] };
+  assert.equal(buildAllPayloads([makeOrder("DE", 1)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING");
+  assert.equal(buildAllPayloads([makeOrder("CA", 10)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING");
+});
+
 test("parses successful export Product_Code values into reusable rules", async () => {
   assert.deepEqual(parseExportProductCode("ULCNP", "ULCNP-Pink/5.8X8.5INCH"), {
     spu: "ULCNP",
