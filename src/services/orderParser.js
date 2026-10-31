@@ -94,7 +94,7 @@ function parseItem(lines, itemStart, nextItemStart = -1) {
   const match = first.match(/^(\d+)\s+([\w-]+)\s+(.+?)(?:\s*\|\s*)?\$\s*([\d,]+(?:\.\d{1,2})?)/);
   const shortPriceMatch = first.match(/^(\d+)\s+\(?\$\s*([\d,]+(?:\.\d{1,2})?)\)?$/);
   const noPriceMatch = first.match(/^(\d+)\s+(.+)$/);
-  const standaloneSku = lines[itemStart + 1]?.match(/^(?=.*[A-Z])[A-Z0-9_-]{3,}$/i)?.[0];
+  const standaloneSku = lines[itemStart + 1]?.match(/^(?=.*[A-Z])[A-Z0-9_-]{2,}$/i)?.[0];
   if (!match && !shortPriceMatch && !(noPriceMatch && standaloneSku)) return null;
   const quantity = Number(match?.[1] || shortPriceMatch?.[1] || noPriceMatch?.[1]);
   const inlineSku = !match && !standaloneSku ? lines[itemStart + 1]?.match(/^([A-Z0-9_-]{3,})(?:\s|$)/i)?.[1] : "";
@@ -146,7 +146,7 @@ function isItemStartLine(line, index, lines) {
   if (/^\d+\s+\(\s*\$/.test(line) && /^Discount$/i.test(lines[index + 1] || "")) return false;
   return /^\d+\s+.+\$\s*[\d,]+(?:\.\d{1,2})?/.test(line)
     || /^\d+\s+\(?\$\s*[\d,]+(?:\.\d{1,2})?\)?$/.test(line)
-    || /^\d+\s+.+/.test(line) && /^(?=.*[A-Z])[A-Z0-9_-]{3,}$/i.test(lines[index + 1] || "");
+    || /^\d+\s+.+/.test(line) && /^(?=.*[A-Z])[A-Z0-9_-]{2,}$/i.test(lines[index + 1] || "");
 }
 
 function applyContinuationOptions(item, lines) {

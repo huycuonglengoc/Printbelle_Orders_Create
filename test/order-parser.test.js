@@ -161,6 +161,30 @@ test("parses items without a printed price using the following SKU line", () => 
   assert.equal(page.items[0].personalization, "Mia");
 });
 
+test("parses two-character standalone SKUs such as E1", () => {
+  const page = parsePageLines([
+    "Ship To: Eleanor Hanson Order #4216512948",
+    "17550 SILHOUETTE TRL",
+    "Date 10/29/2026",
+    "HUNTERTOWN, IN 46748",
+    "0578 US User 1308767225",
+    "Ship Date",
+    "Qty Item Description Price",
+    "1 Personalized Floral Jewelry Box with Drawer,",
+    "E1",
+    "Wildflower Jewelry Organizer with Custom Name (E1)",
+    "COLOR OPTIONS: Pink",
+    "Add Personalization: Elissa",
+    "Graphic Options: 6",
+    "Font Options: Font 4",
+    "Total"
+  ], 1);
+  assert.equal(page.items.length, 1);
+  assert.equal(page.items[0].sourceSku, "E-1");
+  assert.equal(page.items[0].productCodeSource, "E-1");
+  assert.equal(page.items[0].color, "Pink");
+});
+
 test("parses Canadian addresses and Notebooks Colors", () => {
   const page = parsePageLines([
     "Ship To: Canadian Customer Order #PB-CA",
