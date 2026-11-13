@@ -28,10 +28,17 @@ function findSpu(item, catalog) {
     const normalizedAlias = normalizeKey(alias);
     return normalizedAlias && haystack.includes(normalizedAlias);
   }));
-  // A clear product-name/alias match is more specific than a potentially
-  // stale or overly broad prefix rule. This prevents a SKU such as SC-10
-  // from being assigned to the wrong SPU when the title says Suncatcher.
-  const candidate = aliasCandidate || prefixCandidate;
+  const shapeValue = normalizeKey(item.shapeRaw || item.shape || "");
+  const shapeEntries = (catalog.spus || []).flatMap((entry) => values(entry.shapeOptions).map((shape) => ({ entry, shape: normalizeKey(shape) })));
+  const exactShape = shapeEntries.find(({ shape }) => shapeValue && shape === shapeValue);
+  const partialShapes = shapeEntries
+    .filter(({ shape }) => shapeValue && shape && (shapeValue.includes(shape) || shape.includes(shapeValue)))
+    .sort((left, right) => right.shape.length - left.shape.length);
+  const shapeCandidate = exactShape?.entry || partialShapes[0]?.entry;
+  // Shape options are the most specific signal for products that share SKU
+  // prefixes. Otherwise prefer a clear product-name/alias match over a broad
+  // prefix rule, such as SC-10 being assigned to a Suncatcher.
+  const candidate = shapeCandidate || aliasCandidate || prefixCandidate;
   return candidate?.spu || "";
 }
 

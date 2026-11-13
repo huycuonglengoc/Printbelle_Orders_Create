@@ -58,7 +58,7 @@ function field(key, label, value, orderIndex) { return `<div class="field"><labe
 function itemMarkup(item, orderIndex, itemIndex, spus) {
   const options = spus.map((entry) => `<option value="${escapeHtml(entry.spu)}" ${entry.spu === (item.spu || '') ? 'selected' : ''}>${escapeHtml(entry.name)}${entry.spu ? ` — ${escapeHtml(entry.spu)}` : ''}</option>`).join('');
   return `<div class="item-row" data-order="${orderIndex}" data-item="${itemIndex}">
-    <div class="field wide"><label>Product / source</label><input data-item-key="title" value="${escapeHtml(item.title)}" /><small>${escapeHtml(item.productCodeSource)} · qty ${item.quantity}</small></div>
+    <div class="field wide"><label>Product / source</label><input data-item-key="title" value="${escapeHtml(item.title)}" /><small>${escapeHtml(item.productCodeSource)}${item.shapeRaw ? ` · shape ${escapeHtml(item.shapeRaw)}` : ''} · qty ${item.quantity}</small></div>
     <div class="field"><label>SPU</label><select data-item-key="spu"><option value="">— select —</option>${options}<option value="__custom__">Other SPU…</option></select></div>
     <div class="field"><label>Target size</label><input data-item-key="sizeTarget" class="${item.sizeRaw && !item.sizeTarget ? 'warning-field' : ''}" placeholder="${escapeHtml(item.sizeRaw || 'None')}" value="${escapeHtml(item.sizeTarget || '')}" /></div>
     <div class="field"><label>Color</label><input data-item-key="colorTarget" value="${escapeHtml(item.colorTarget || item.color || '')}" /></div>

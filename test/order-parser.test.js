@@ -72,6 +72,94 @@ test("prefers a clear product name over a stale SKU prefix", () => {
   assert.equal(built.payload.items[0].productSpu, "USC");
 });
 
+test("maps SPU from a Ring Dish shape option", () => {
+  const page = parsePageLines([
+    "Ship To: Shape Customer Order #PB-SHAPE",
+    "1 Main Street",
+    "Date 01/01/2026",
+    "Example City, MD 21783",
+    "User example",
+    "Qty Item Description Price",
+    "1 Personalized Hair Stylist Trinket Dish | Custom",
+    "FJ88",
+    "Hairdresser Gift | Ceramic Jewelry Holder (FJ88)",
+    "Ring Dish Shape: Wavy Square",
+    "Personalization: Maren",
+    "Total"
+  ], 1);
+  const [built] = buildAllPayloads([page], {
+    ...sampleCatalog,
+    spus: [
+      { spu: "USACRDFP", name: "Square Ring Dish", skuPrefixes: ["FJ"], shapeOptions: ["Wavy Square"] },
+      { spu: "USARCRDFP", name: "Round Ring Dish", skuPrefixes: ["FJ"], shapeOptions: ["Square"] }
+    ]
+  }, "http://localhost:3000");
+  assert.equal(page.items[0].shapeRaw, "Wavy Square");
+  assert.equal(page.items[0].personalization, "Maren");
+  assert.equal(built.payload.items[0].productSpu, "USACRDFP");
+});
+
+test("parses Ring Dish Options and Ring Dish Option variants", () => {
+  const makePage = (optionLine) => parsePageLines([
+    "Ship To: Shape Customer Order #PB-SHAPE-VARIANT",
+    "1 Main Street",
+    "Date 01/01/2026",
+    "Example City, MD 21783",
+    "User example",
+    "Qty Item Description Price",
+    "1 Personalized Ring Dish",
+    "DK202",
+    "Custom Ring Dish (DK202)",
+    optionLine,
+    "Birth Flower Options: December",
+    "Personalization: Maren",
+    "Total"
+  ], 1);
+  assert.equal(makePage("Ring Dish Options: Round").items[0].shapeRaw, "Round");
+  assert.equal(makePage("Ring Dish Option: Heart").items[0].shapeRaw, "Heart");
+});
+
+test("parses inline SKU items with Ring Dish Options", () => {
+  const page = parsePageLines([
+    "Ship To: Jessica Fidler Order #PB-SJS",
+    "1208 E DUPONT AVE",
+    "Date 11/12/2026",
+    "BELLE, WV 250151748 US",
+    "User 200277453",
+    "Ship Date",
+    "Qty Item Description Price",
+    "1 RD59 50th Birthday Gift for Her | Ring Dish Chapter",
+    "Fifty | Custom Name Birth Flower Jewelry Dish |",
+    "Ceramic Trinket Dish Women(RD59)",
+    "Ring Dish Options: Round",
+    "Birth Flower Options: December",
+    "Add Your Personalization: Jessica Love, Kristen",
+    "Total"
+  ], 1);
+  assert.equal(page.items.length, 1);
+  assert.equal(page.items[0].productCodeSource, "RD-59");
+  assert.equal(page.items[0].shapeRaw, "Round");
+});
+
+test("parses no-price BTG items with an inline SKU", () => {
+  const page = parsePageLines([
+    "Ship To: BTG Customer Order #PB-BTG-NO-PRICE",
+    "1 Main Street",
+    "Date 11/12/2026",
+    "Example City, MD 21783",
+    "User example",
+    "Qty Item Description Price",
+    "1 DK202 Personalized Autism Teacher Ring Dish,",
+    "Custom Message Jewelry Tray, Teacher Gift (DK202)",
+    "Ring Dish Options: Wavy Square",
+    "Personalization: Teacher",
+    "Total"
+  ], 1);
+  assert.equal(page.items.length, 1);
+  assert.equal(page.items[0].productCodeSource, "DK-202");
+  assert.equal(page.items[0].shapeRaw, "Wavy Square");
+});
+
 test("maps sizes by SKU prefix", () => {
   const order = { orderNumber: "PB-SIZE-PREFIX", items: [{ productCodeSource: "GF-20", title: "Flower Pot", quantity: 1, sizeRaw: '2"x2"x3' }], artworks: [{ urlPath: "/flower.png" }] };
   const payloads = buildAllPayloads([order], { ...sampleCatalog, sizeMappings: { GF: { "2x2x3": "Small" } }, spus: [{ spu: "UFP", name: "Flower Pot", skuPrefixes: ["GF"] }] }, "http://localhost:3000");

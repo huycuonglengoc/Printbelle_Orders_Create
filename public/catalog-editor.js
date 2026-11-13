@@ -28,6 +28,7 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
         <div class="editor-field"><label>Printbelle SPU</label><input data-field="spu-code" value="${escapeHtml(entry.spu)}" placeholder="Example: ULCNP" /></div>
         <div class="editor-field"><label>SKU prefix</label><input data-field="spu-prefixes" value="${escapeHtml((entry.skuPrefixes || []).join(', '))}" placeholder="Example: GF, JS" /><div class="editor-help">GF matches GF-10, GF_10, GF-20…</div></div>
         <div class="editor-field"><label>PDF keywords</label><input data-field="spu-aliases" value="${escapeHtml((entry.aliases || []).join(', '))}" placeholder="notebook, journal, ej-7" /><div class="editor-help">Separate values with commas.</div></div>
+        <div class="editor-field"><label>Shape options</label><input data-field="spu-shapes" value="${escapeHtml((entry.shapeOptions || []).join(', '))}" placeholder="Square, Wavy Square" /><div class="editor-help">Matches Ring Dish Shape or Ring Dish Option in the PDF.</div></div>
       </div>
     </div>`).join('') : '<div class="empty-editor">No SPUs yet. Click “+ Add SPU” to create one.</div>';
 
@@ -80,8 +81,9 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
       name: card.querySelector('[data-field="spu-name"]')?.value.trim() || '',
       spu: card.querySelector('[data-field="spu-code"]')?.value.trim() || '',
       skuPrefixes: (card.querySelector('[data-field="spu-prefixes"]')?.value || '').split(',').map((prefix) => prefix.trim()).filter(Boolean),
-      aliases: (card.querySelector('[data-field="spu-aliases"]')?.value || '').split(',').map((alias) => alias.trim()).filter(Boolean)
-    })).filter((entry) => entry.name || entry.spu || entry.skuPrefixes.length || entry.aliases.length);
+      aliases: (card.querySelector('[data-field="spu-aliases"]')?.value || '').split(',').map((alias) => alias.trim()).filter(Boolean),
+      shapeOptions: (card.querySelector('[data-field="spu-shapes"]')?.value || '').split(',').map((shape) => shape.trim()).filter(Boolean)
+    })).filter((entry) => entry.name || entry.spu || entry.skuPrefixes.length || entry.aliases.length || entry.shapeOptions.length);
     next.sizeMappings = {};
     sizeNode.querySelectorAll('[data-size-group]').forEach((group) => {
       const productCode = group.querySelector('[data-field="size-product"]')?.value.trim();
@@ -116,7 +118,7 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
   }
 
   function setCatalog(next) { current = normalizeCatalog(next); render(); }
-  function addSpu() { sync({ preserveDrafts: true }); current.spus.push({ name: '', spu: '', skuPrefixes: [], aliases: [] }); render(); }
+  function addSpu() { sync({ preserveDrafts: true }); current.spus.push({ name: '', spu: '', skuPrefixes: [], aliases: [], shapeOptions: [] }); render(); }
   function removeSpu(index) { sync({ preserveDrafts: true }); current.spus.splice(index, 1); render(); }
   function addSizeMapping() { sync({ preserveDrafts: true }); current.sizeMappings[uniqueDraftKey('product')] = { [uniqueDraftKey('size')]: '' }; render(); }
   function removeSizeGroup(index) { sync({ preserveDrafts: true }); const key = Object.keys(current.sizeMappings)[index]; delete current.sizeMappings[key]; render(); }
