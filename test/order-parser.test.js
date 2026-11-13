@@ -160,6 +160,26 @@ test("parses no-price BTG items with an inline SKU", () => {
   assert.equal(page.items[0].shapeRaw, "Wavy Square");
 });
 
+test("parses quantity-only item starts with SKU and title on the next line", () => {
+  const page = parsePageLines([
+    "Ship To: BTG Customer Order #PB-BTG-QUANTITY-ONLY",
+    "1 Main Street",
+    "Date 11/12/2026",
+    "Example City, MD 21783",
+    "User example",
+    "Qty Item Description Price",
+    "1",
+    "DK202 Personalized Autism Teacher Ring Dish,",
+    "Custom Message Jewelry Tray, Teacher Appreciation Gift (DK202)",
+    "Ring Dish Options: Wavy Square",
+    "Personalization: Teacher",
+    "Total"
+  ], 1);
+  assert.equal(page.items.length, 1);
+  assert.equal(page.items[0].productCodeSource, "DK-202");
+  assert.equal(page.items[0].shapeRaw, "Wavy Square");
+});
+
 test("maps sizes by SKU prefix", () => {
   const order = { orderNumber: "PB-SIZE-PREFIX", items: [{ productCodeSource: "GF-20", title: "Flower Pot", quantity: 1, sizeRaw: '2"x2"x3' }], artworks: [{ urlPath: "/flower.png" }] };
   const payloads = buildAllPayloads([order], { ...sampleCatalog, sizeMappings: { GF: { "2x2x3": "Small" } }, spus: [{ spu: "UFP", name: "Flower Pot", skuPrefixes: ["GF"] }] }, "http://localhost:3000");

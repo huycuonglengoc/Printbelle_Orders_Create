@@ -94,20 +94,24 @@ function parseItem(lines, itemStart, nextItemStart = -1) {
   const match = first.match(/^(\d+)\s+([\w-]+)\s+(.+?)(?:\s*\|\s*)?\$\s*([\d,]+(?:\.\d{1,2})?)/);
   const shortPriceMatch = first.match(/^(\d+)\s+\(?\$\s*([\d,]+(?:\.\d{1,2})?)\)?$/);
   const noPriceMatch = first.match(/^(\d+)\s+(.+)$/);
+  const quantityOnlyMatch = first.match(/^(\d+)$/);
   const standaloneSku = lines[itemStart + 1]?.match(/^(?=.*[A-Z])[A-Z0-9_-]{2,}$/i)?.[0];
   const inlineSku = !match && !standaloneSku ? lines[itemStart + 1]?.match(/^([A-Z0-9_-]{3,})$/i)?.[1] : "";
   const inlineSkuOnFirstLine = !match && !standaloneSku && !inlineSku
     ? noPriceMatch?.[2]?.match(/^((?=[A-Z0-9_-]*\d)[A-Z0-9_-]{2,})(?:\s|$)/i)?.[1] || ""
     : "";
-  if (!match && !shortPriceMatch && !(noPriceMatch && (standaloneSku || inlineSku || inlineSkuOnFirstLine))) return null;
-  const quantity = Number(match?.[1] || shortPriceMatch?.[1] || noPriceMatch?.[1]);
-  const skuLine = standaloneSku || inlineSku || inlineSkuOnFirstLine;
+  const inlineSkuLine = !match && quantityOnlyMatch
+    ? lines[itemStart + 1]?.match(/^((?=[A-Z0-9_-]*\d)[A-Z0-9_-]{2,})\s+(.+)$/i)
+    : null;
+  if (!match && !shortPriceMatch && !(noPriceMatch && (standaloneSku || inlineSku || inlineSkuOnFirstLine)) && !(quantityOnlyMatch && inlineSkuLine)) return null;
+  const quantity = Number(match?.[1] || shortPriceMatch?.[1] || noPriceMatch?.[1] || quantityOnlyMatch?.[1]);
+  const skuLine = standaloneSku || inlineSku || inlineSkuOnFirstLine || inlineSkuLine?.[1] || "";
   const sourceSku = canonicalProductCode(skuLine || match?.[2] || "");
   const titleParts = match
     ? [standaloneSku ? `${match[2]} ${match[3]}` : match[3]]
-    : [inlineSkuOnFirstLine ? noPriceMatch[2].replace(new RegExp(`^${inlineSkuOnFirstLine}\\s*`, "i"), "") : noPriceMatch?.[2] || ""];
+    : [quantityOnlyMatch ? inlineSkuLine?.[2] || "" : inlineSkuOnFirstLine ? noPriceMatch[2].replace(new RegExp(`^${inlineSkuOnFirstLine}\\s*`, "i"), "") : noPriceMatch?.[2] || ""];
   const skipStandaloneSkuLine = Boolean(standaloneSku);
-  let cursor = itemStart + 1;
+  let cursor = itemStart + 1 + (inlineSkuLine ? 1 : 0);
   while (cursor < lines.length && (nextItemStart < 0 || cursor < nextItemStart) && !/^(?:Size Options|Choose Your Color|Journal Color Options|PERSONALIZATION|Personalization|Add personalization|Choose a font|Choose font color|Choice Graphic Options|\d+\s+Discount|Sub Total|Tax|Shipping|Total|Note:)/i.test(lines[cursor])) {
     if (skipStandaloneSkuLine && cursor === itemStart + 1) {
       cursor += 1;
@@ -152,6 +156,7 @@ function isItemStartLine(line, index, lines) {
   return /^\d+\s+.+\$\s*[\d,]+(?:\.\d{1,2})?/.test(line)
     || /^\d+\s+\(?\$\s*[\d,]+(?:\.\d{1,2})?\)?$/.test(line)
     || /^\d+\s+(?=[A-Z0-9_-]*\d)[A-Z0-9_-]{2,}\s+.+/i.test(line)
+    || /^\d+$/.test(line) && /^(?=[A-Z0-9_-]*\d)[A-Z0-9_-]{2,}\s+.+/i.test(lines[index + 1] || "")
     || /^\d+\s+.+/.test(line) && /^(?=.*[A-Z])[A-Z0-9_-]{2,}$/i.test(lines[index + 1] || "");
 }
 
