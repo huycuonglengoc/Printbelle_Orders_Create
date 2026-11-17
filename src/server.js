@@ -95,7 +95,7 @@ app.post("/api/orders/export-import", async (req, res) => {
     if (config.r2.requiredForImport && !config.r2.enabled) {
       return res.status(503).json({ error: "A direct public Cloudflare R2 URL is required for import export. Configure R2_PUBLIC_BASE_URL as an HTTPS custom domain or r2.dev URL.", r2: r2Status() });
     }
-    const catalog = req.body?.catalog || config.catalog;
+    const catalog = config.catalog;
     const orders = req.body?.orders || [];
     const prepared = buildImportRows(orders, catalog, config.artworkBaseUrl);
     if (!prepared.rows.length) {
@@ -124,7 +124,7 @@ app.post("/api/orders/export-import", async (req, res) => {
 
 app.post("/api/orders/preview", (req, res) => {
   try {
-    const catalog = req.body?.catalog || config.catalog;
+    const catalog = config.catalog;
     const orders = req.body?.orders || [];
     res.json({ dryRun: config.dryRun, orders: buildAllPayloads(orders, catalog, config.artworkBaseUrl) });
   } catch (error) {
@@ -140,7 +140,7 @@ app.post("/api/orders/submit", async (req, res) => {
   if (liveRequest) liveSubmissionInProgress = true;
   try {
     if (req.body?.confirm !== true) return res.status(400).json({ error: "Confirmation is required before submitting orders." });
-    const built = buildAllPayloads(req.body?.orders || [], req.body?.catalog || config.catalog, config.artworkBaseUrl);
+    const built = buildAllPayloads(req.body?.orders || [], config.catalog, config.artworkBaseUrl);
     const skipped = built.filter((entry) => entry.skipped);
     const ready = built.filter((entry) => !entry.skipped);
     if (config.dryRun) return res.json({ dryRun: true, message: "Dry-run: nothing was submitted to Printbelle.", orders: ready, skipped });
