@@ -139,8 +139,10 @@ document.querySelectorAll('[data-drop-input]').forEach((zone) => {
 $('#pdfInput').addEventListener('change', (event) => { $('#pdfLabel').textContent = event.target.files[0]?.name || 'Choose input.pdf'; });
 $('#artworkInput').addEventListener('change', (event) => { $('#artworkLabel').textContent = event.target.files.length ? `${event.target.files.length} artwork files selected` : 'Choose artwork'; });
 $('#uploadForm').addEventListener('submit', async (event) => {
-  event.preventDefault(); setStatus('#parseStatus', 'Reading PDF and matching artwork…');
-  try { await refreshCatalog(); const response = await fetch('/api/parse', { method:'POST', body:new FormData(event.currentTarget) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); state.orders=data.orders; await applyAutomaticMappings(state.orders); renderOrders(); $('#reviewPanel').classList.remove('hidden'); $('#reviewPanel').scrollIntoView({behavior:'smooth'}); setStatus('#parseStatus', `Read ${state.orders.length} order(s) and applied catalog mappings.`, 'success'); } catch (error) { setStatus('#parseStatus', error.message, 'error'); }
+  event.preventDefault();
+  const form = event.currentTarget;
+  setStatus('#parseStatus', 'Reading PDF and matching artwork…');
+  try { await refreshCatalog(); const response = await fetch('/api/parse', { method:'POST', body:new FormData(form) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); state.orders=data.orders; await applyAutomaticMappings(state.orders); renderOrders(); $('#reviewPanel').classList.remove('hidden'); $('#reviewPanel').scrollIntoView({behavior:'smooth'}); setStatus('#parseStatus', `Read ${state.orders.length} order(s) and applied catalog mappings.`, 'success'); } catch (error) { setStatus('#parseStatus', error.message, 'error'); }
 });
 $('#previewButton').addEventListener('click', async () => { readFormState(); setStatus('#reviewStatus','Building payload preview…'); try { await refreshCatalog(); const response=await fetch('/api/orders/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orders:state.orders,catalog:state.catalog})}); const data=await response.json(); if(!response.ok) throw new Error(data.error); state.preview=data.orders; renderPreview(); setStatus('#reviewStatus','Payload preview is ready.','success'); } catch(error) { setStatus('#reviewStatus',error.message,'error'); } });
 $('#submitButton').addEventListener('click', () => { $('#previewButton').click(); });
