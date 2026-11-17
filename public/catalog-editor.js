@@ -1,23 +1,29 @@
 export function normalizeCatalog(catalog) {
+  const threshold = Number(catalog?.shippingSettings?.bulkThreshold);
   return {
     spus: Array.isArray(catalog?.spus) ? catalog.spus : [],
     sizeMappings: catalog?.sizeMappings && typeof catalog.sizeMappings === 'object' ? catalog.sizeMappings : {},
     colorMappings: catalog?.colorMappings || {},
     variantMappings: catalog?.variantMappings || {},
     variantRules: Array.isArray(catalog?.variantRules) ? catalog.variantRules : [],
-    defaultSizeRules: Array.isArray(catalog?.defaultSizeRules) ? catalog.defaultSizeRules : []
+    defaultSizeRules: Array.isArray(catalog?.defaultSizeRules) ? catalog.defaultSizeRules : [],
+    shippingSettings: {
+      bulkThreshold: Number.isFinite(threshold) && threshold >= 0 ? Math.floor(threshold) : 10,
+      bulkMethod: String(catalog?.shippingSettings?.bulkMethod || 'STANDARD SHIPPING(FAST)').trim() || 'STANDARD SHIPPING(FAST)'
+    }
   };
 }
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
 const uniqueDraftKey = (prefix) => `__new_${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, defaultSizeRoot }) {
+export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, defaultSizeRoot, shippingRoot }) {
   let current = normalizeCatalog(catalog);
   const spuNode = document.querySelector(spuRoot);
   const sizeNode = document.querySelector(sizeRoot);
   const variantNode = variantRoot ? document.querySelector(variantRoot) : null;
   const defaultSizeNode = defaultSizeRoot ? document.querySelector(defaultSizeRoot) : null;
+  const shippingNode = shippingRoot ? document.querySelector(shippingRoot) : null;
 
   function render() {
     const spus = current.spus || [];
@@ -73,6 +79,13 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
         <button class="text-button" type="button" data-action="remove-default-size-rule" data-index="${index}">Remove</button>
       </div>`).join('') : '<div class="empty-editor">No default size rules yet.</div>';
     }
+
+    if (shippingNode) {
+      shippingNode.innerHTML = `<div class="shipping-settings-grid">
+        <div class="editor-field"><label>Fast shipping threshold</label><input data-field="shipping-threshold" type="number" min="0" step="1" value="${escapeHtml(current.shippingSettings.bulkThreshold)}" /><div class="editor-help">Apply the fast method when total quantity is greater than this number.</div></div>
+        <div class="editor-field"><label>Shipping method above threshold</label><input data-field="shipping-method" value="${escapeHtml(current.shippingSettings.bulkMethod)}" placeholder="STANDARD SHIPPING(FAST)" /><div class="editor-help">This value is used for all destinations above the threshold.</div></div>
+      </div>`;
+    }
   }
 
   function sync({ preserveDrafts = false } = {}) {
@@ -112,6 +125,13 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
         skuPrefix: row.querySelector('[data-field="default-size-prefix"]')?.value.trim() || '',
         size: row.querySelector('[data-field="default-size-value"]')?.value.trim() || ''
       })).filter((rule) => rule.skuPrefix || rule.size);
+    }
+    if (shippingNode) {
+      const threshold = Number(shippingNode.querySelector('[data-field="shipping-threshold"]')?.value);
+      next.shippingSettings = {
+        bulkThreshold: Number.isFinite(threshold) && threshold >= 0 ? Math.floor(threshold) : 10,
+        bulkMethod: shippingNode.querySelector('[data-field="shipping-method"]')?.value.trim() || 'STANDARD SHIPPING(FAST)'
+      };
     }
     current = next;
     return current;

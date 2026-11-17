@@ -4,15 +4,19 @@ import { skuPrefixMatches, splitSkuPrefixes } from "./skuPrefix.js";
 
 const DEFAULT_SHIPPING_METHOD = "STANDARD SHIPPING-USPS";
 const INTERNATIONAL_SHIPPING_METHOD = "STANDARD SHIPPING";
-const BULK_SHIPPING_METHOD = "FAST   SHIPPING";
+const DEFAULT_BULK_SHIPPING_THRESHOLD = 10;
+const DEFAULT_BULK_SHIPPING_METHOD = "STANDARD SHIPPING(FAST)";
 
 function totalItemQuantity(order) {
   return (order.items || []).reduce((total, item) => total + Math.max(0, Number(item.quantity) || 0), 0);
 }
 
-function shippingMethodForOrder(order) {
+function shippingMethodForOrder(order, catalog) {
+  const threshold = Number(catalog?.shippingSettings?.bulkThreshold);
+  const bulkThreshold = Number.isFinite(threshold) && threshold >= 0 ? threshold : DEFAULT_BULK_SHIPPING_THRESHOLD;
+  const bulkMethod = String(catalog?.shippingSettings?.bulkMethod || DEFAULT_BULK_SHIPPING_METHOD).trim() || DEFAULT_BULK_SHIPPING_METHOD;
+  if (totalItemQuantity(order) > bulkThreshold) return bulkMethod;
   if (String(order.countryCode || "US").toUpperCase() !== "US") return INTERNATIONAL_SHIPPING_METHOD;
-  if (totalItemQuantity(order) >= 10) return BULK_SHIPPING_METHOD;
   return order.shippingMethod || DEFAULT_SHIPPING_METHOD;
 }
 
@@ -127,7 +131,7 @@ export function buildPrintbellePayload(order, catalog, artworkBaseUrl) {
   return {
     payload: {
       orderId: order.orderNumber,
-      shippingMethod: shippingMethodForOrder(order),
+      shippingMethod: shippingMethodForOrder(order, catalog),
       shippingName: order.shippingName,
       shippingAddress1: order.shippingAddress1,
       shippingAddress2: order.shippingAddress2,

@@ -23,6 +23,17 @@ const r2CredentialsConfigured = Boolean(
   r2AccountId && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_BUCKET
 );
 
+const DEFAULT_BULK_SHIPPING_THRESHOLD = 10;
+const DEFAULT_BULK_SHIPPING_METHOD = "STANDARD SHIPPING(FAST)";
+
+function normalizeShippingSettings(settings) {
+  const threshold = Number(settings?.bulkThreshold);
+  return {
+    bulkThreshold: Number.isFinite(threshold) && threshold >= 0 ? Math.floor(threshold) : DEFAULT_BULK_SHIPPING_THRESHOLD,
+    bulkMethod: String(settings?.bulkMethod || DEFAULT_BULK_SHIPPING_METHOD).trim() || DEFAULT_BULK_SHIPPING_METHOD
+  };
+}
+
 export function normalizeCatalog(catalog) {
   return {
     spus: Array.isArray(catalog?.spus) ? catalog.spus : [],
@@ -30,7 +41,8 @@ export function normalizeCatalog(catalog) {
     colorMappings: catalog?.colorMappings && typeof catalog.colorMappings === "object" ? catalog.colorMappings : {},
     variantMappings: catalog?.variantMappings && typeof catalog.variantMappings === "object" ? catalog.variantMappings : {},
     variantRules: Array.isArray(catalog?.variantRules) ? catalog.variantRules : [],
-    defaultSizeRules: Array.isArray(catalog?.defaultSizeRules) ? catalog.defaultSizeRules : []
+    defaultSizeRules: Array.isArray(catalog?.defaultSizeRules) ? catalog.defaultSizeRules : [],
+    shippingSettings: normalizeShippingSettings(catalog?.shippingSettings)
   };
 }
 

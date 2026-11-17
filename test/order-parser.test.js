@@ -576,11 +576,16 @@ test("stops color parsing before font options", () => {
   assert.equal(page.items[0].color, "Green");
 });
 
-test("selects shipping method from total item quantity", () => {
-  const makeOrder = (quantity) => ({ orderNumber: `PB-SHIPPING-${quantity}`, items: [{ productCodeSource: "EJ-7", title: "Notebook", quantity, sizeRaw: "" }], artworks: [{ urlPath: "/notebook.png" }] });
-  const catalog = { ...sampleCatalog, spus: [{ spu: "ULCNP", name: "Notebook", skuPrefixes: ["EJ"] }] };
+test("selects configurable shipping method when quantity is above the threshold", () => {
+  const makeOrder = (quantity, countryCode = "US") => ({ orderNumber: `PB-SHIPPING-${countryCode}-${quantity}`, countryCode, items: [{ productCodeSource: "EJ-7", title: "Notebook", quantity, sizeRaw: "" }], artworks: [{ urlPath: "/notebook.png" }] });
+  const catalog = { ...sampleCatalog, spus: [{ spu: "ULCNP", name: "Notebook", skuPrefixes: ["EJ"] }], shippingSettings: { bulkThreshold: 10, bulkMethod: "STANDARD SHIPPING(FAST)" } };
   assert.equal(buildAllPayloads([makeOrder(9)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING-USPS");
-  assert.equal(buildAllPayloads([makeOrder(10)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "FAST   SHIPPING");
+  assert.equal(buildAllPayloads([makeOrder(10)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING-USPS");
+  assert.equal(buildAllPayloads([makeOrder(11)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING(FAST)");
+  assert.equal(buildAllPayloads([makeOrder(11, "DE")], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING(FAST)");
+
+  const customCatalog = { ...catalog, shippingSettings: { bulkThreshold: 5, bulkMethod: "CUSTOM BULK METHOD" } };
+  assert.equal(buildAllPayloads([makeOrder(6)], customCatalog, "http://localhost:3000")[0].payload.shippingMethod, "CUSTOM BULK METHOD");
 });
 
 test("uses Standard Shipping for every non-US destination", () => {
@@ -593,6 +598,7 @@ test("uses Standard Shipping for every non-US destination", () => {
   const catalog = { ...sampleCatalog, spus: [{ spu: "UJBOX", name: "Jewelry Storage", skuPrefixes: ["JEW"] }] };
   assert.equal(buildAllPayloads([makeOrder("DE", 1)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING");
   assert.equal(buildAllPayloads([makeOrder("CA", 10)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING");
+  assert.equal(buildAllPayloads([makeOrder("CA", 11)], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING(FAST)");
 });
 
 test("parses successful export Product_Code values into reusable rules", async () => {
