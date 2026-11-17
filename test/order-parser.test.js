@@ -588,6 +588,22 @@ test("selects configurable shipping method when quantity is above the threshold"
   assert.equal(buildAllPayloads([makeOrder(6)], customCatalog, "http://localhost:3000")[0].payload.shippingMethod, "CUSTOM BULK METHOD");
 });
 
+test("uses shipping settings from the matched product catalog entry", () => {
+  const order = {
+    orderNumber: "PB-PRODUCT-SHIPPING",
+    countryCode: "US",
+    items: [{ productCodeSource: "EJ-7", title: "Notebook", quantity: 4, sizeRaw: "" }],
+    artworks: [{ urlPath: "/notebook.png" }]
+  };
+  const catalog = {
+    ...sampleCatalog,
+    spus: [{ spu: "ULCNP", name: "Notebook", skuPrefixes: ["EJ"], shippingMethod: "PRODUCT STANDARD", fastShippingThreshold: 3, fastShippingMethod: "PRODUCT FAST" }]
+  };
+  assert.equal(buildAllPayloads([order], catalog, "http://localhost:3000")[0].payload.shippingMethod, "PRODUCT FAST");
+  assert.equal(buildAllPayloads([{ ...order, items: [{ ...order.items[0], quantity: 3 }] }], catalog, "http://localhost:3000")[0].payload.shippingMethod, "PRODUCT STANDARD");
+  assert.equal(buildAllPayloads([{ ...order, countryCode: "DE", items: [{ ...order.items[0], quantity: 3 }] }], catalog, "http://localhost:3000")[0].payload.shippingMethod, "STANDARD SHIPPING");
+});
+
 test("uses Standard Shipping for every non-US destination", () => {
   const makeOrder = (countryCode, quantity) => ({
     orderNumber: `PB-INTERNATIONAL-${countryCode}-${quantity}`,

@@ -1,29 +1,35 @@
 export function normalizeCatalog(catalog) {
   const threshold = Number(catalog?.shippingSettings?.bulkThreshold);
+  const bulkThreshold = Number.isFinite(threshold) && threshold >= 0 ? Math.floor(threshold) : 10;
+  const bulkMethod = String(catalog?.shippingSettings?.bulkMethod || 'STANDARD SHIPPING(FAST)').trim() || 'STANDARD SHIPPING(FAST)';
   return {
-    spus: Array.isArray(catalog?.spus) ? catalog.spus : [],
+    spus: Array.isArray(catalog?.spus) ? catalog.spus.map((entry) => {
+      const productThreshold = Number(entry?.fastShippingThreshold);
+      return {
+        ...entry,
+        shippingMethod: String(entry?.shippingMethod || '').trim(),
+        fastShippingThreshold: Number.isFinite(productThreshold) && productThreshold >= 0 ? Math.floor(productThreshold) : bulkThreshold,
+        fastShippingMethod: String(entry?.fastShippingMethod || bulkMethod).trim() || bulkMethod
+      };
+    }) : [],
     sizeMappings: catalog?.sizeMappings && typeof catalog.sizeMappings === 'object' ? catalog.sizeMappings : {},
     colorMappings: catalog?.colorMappings || {},
     variantMappings: catalog?.variantMappings || {},
     variantRules: Array.isArray(catalog?.variantRules) ? catalog.variantRules : [],
     defaultSizeRules: Array.isArray(catalog?.defaultSizeRules) ? catalog.defaultSizeRules : [],
-    shippingSettings: {
-      bulkThreshold: Number.isFinite(threshold) && threshold >= 0 ? Math.floor(threshold) : 10,
-      bulkMethod: String(catalog?.shippingSettings?.bulkMethod || 'STANDARD SHIPPING(FAST)').trim() || 'STANDARD SHIPPING(FAST)'
-    }
+    shippingSettings: { bulkThreshold, bulkMethod }
   };
 }
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
 const uniqueDraftKey = (prefix) => `__new_${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, defaultSizeRoot, shippingRoot }) {
+export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, defaultSizeRoot }) {
   let current = normalizeCatalog(catalog);
   const spuNode = document.querySelector(spuRoot);
   const sizeNode = document.querySelector(sizeRoot);
   const variantNode = variantRoot ? document.querySelector(variantRoot) : null;
   const defaultSizeNode = defaultSizeRoot ? document.querySelector(defaultSizeRoot) : null;
-  const shippingNode = shippingRoot ? document.querySelector(shippingRoot) : null;
 
   function render() {
     const spus = current.spus || [];
@@ -35,6 +41,11 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
         <div class="editor-field"><label>SKU prefix</label><input data-field="spu-prefixes" value="${escapeHtml((entry.skuPrefixes || []).join(', '))}" placeholder="Example: GF, JS" /><div class="editor-help">GF matches GF-10, GF_10, GF-20…</div></div>
         <div class="editor-field"><label>PDF keywords</label><input data-field="spu-aliases" value="${escapeHtml((entry.aliases || []).join(', '))}" placeholder="notebook, journal, ej-7" /><div class="editor-help">Separate values with commas.</div></div>
         <div class="editor-field"><label>Shape options</label><input data-field="spu-shapes" value="${escapeHtml((entry.shapeOptions || []).join(', '))}" placeholder="Square, Wavy Square" /><div class="editor-help">Matches Ring Dish Shape or Ring Dish Option in the PDF.</div></div>
+      </div>
+      <div class="product-shipping-grid">
+        <div class="editor-field"><label>Default shipping method</label><input data-field="spu-shipping-method" value="${escapeHtml(entry.shippingMethod)}" placeholder="STANDARD SHIPPING-USPS" /><div class="editor-help">Used when this product is below its fast-shipping threshold.</div></div>
+        <div class="editor-field"><label>Fast shipping threshold</label><input data-field="spu-shipping-threshold" type="number" min="0" step="1" value="${escapeHtml(entry.fastShippingThreshold)}" /><div class="editor-help">Fast shipping applies when this product quantity is greater than this number.</div></div>
+        <div class="editor-field"><label>Fast shipping method</label><input data-field="spu-fast-shipping-method" value="${escapeHtml(entry.fastShippingMethod)}" placeholder="STANDARD SHIPPING(FAST)" /></div>
       </div>
     </div>`).join('') : '<div class="empty-editor">No SPUs yet. Click “+ Add SPU” to create one.</div>';
 
@@ -80,12 +91,6 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
       </div>`).join('') : '<div class="empty-editor">No default size rules yet.</div>';
     }
 
-    if (shippingNode) {
-      shippingNode.innerHTML = `<div class="shipping-settings-grid">
-        <div class="editor-field"><label>Fast shipping threshold</label><input data-field="shipping-threshold" type="number" min="0" step="1" value="${escapeHtml(current.shippingSettings.bulkThreshold)}" /><div class="editor-help">Apply the fast method when total quantity is greater than this number.</div></div>
-        <div class="editor-field"><label>Shipping method above threshold</label><input data-field="shipping-method" value="${escapeHtml(current.shippingSettings.bulkMethod)}" placeholder="STANDARD SHIPPING(FAST)" /><div class="editor-help">This value is used for all destinations above the threshold.</div></div>
-      </div>`;
-    }
   }
 
   function sync({ preserveDrafts = false } = {}) {
@@ -95,7 +100,10 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
       spu: card.querySelector('[data-field="spu-code"]')?.value.trim() || '',
       skuPrefixes: (card.querySelector('[data-field="spu-prefixes"]')?.value || '').split(',').map((prefix) => prefix.trim()).filter(Boolean),
       aliases: (card.querySelector('[data-field="spu-aliases"]')?.value || '').split(',').map((alias) => alias.trim()).filter(Boolean),
-      shapeOptions: (card.querySelector('[data-field="spu-shapes"]')?.value || '').split(',').map((shape) => shape.trim()).filter(Boolean)
+      shapeOptions: (card.querySelector('[data-field="spu-shapes"]')?.value || '').split(',').map((shape) => shape.trim()).filter(Boolean),
+      shippingMethod: card.querySelector('[data-field="spu-shipping-method"]')?.value.trim() || '',
+      fastShippingThreshold: Math.max(0, Math.floor(Number(card.querySelector('[data-field="spu-shipping-threshold"]')?.value) || 0)),
+      fastShippingMethod: card.querySelector('[data-field="spu-fast-shipping-method"]')?.value.trim() || 'STANDARD SHIPPING(FAST)'
     })).filter((entry) => entry.name || entry.spu || entry.skuPrefixes.length || entry.aliases.length || entry.shapeOptions.length);
     next.sizeMappings = {};
     sizeNode.querySelectorAll('[data-size-group]').forEach((group) => {
@@ -126,19 +134,12 @@ export function createCatalogEditor({ catalog, spuRoot, sizeRoot, variantRoot, d
         size: row.querySelector('[data-field="default-size-value"]')?.value.trim() || ''
       })).filter((rule) => rule.skuPrefix || rule.size);
     }
-    if (shippingNode) {
-      const threshold = Number(shippingNode.querySelector('[data-field="shipping-threshold"]')?.value);
-      next.shippingSettings = {
-        bulkThreshold: Number.isFinite(threshold) && threshold >= 0 ? Math.floor(threshold) : 10,
-        bulkMethod: shippingNode.querySelector('[data-field="shipping-method"]')?.value.trim() || 'STANDARD SHIPPING(FAST)'
-      };
-    }
     current = next;
     return current;
   }
 
   function setCatalog(next) { current = normalizeCatalog(next); render(); }
-  function addSpu() { sync({ preserveDrafts: true }); current.spus.push({ name: '', spu: '', skuPrefixes: [], aliases: [], shapeOptions: [] }); render(); }
+  function addSpu() { sync({ preserveDrafts: true }); current.spus.push({ name: '', spu: '', skuPrefixes: [], aliases: [], shapeOptions: [], shippingMethod: '', fastShippingThreshold: current.shippingSettings.bulkThreshold, fastShippingMethod: current.shippingSettings.bulkMethod }); render(); }
   function removeSpu(index) { sync({ preserveDrafts: true }); current.spus.splice(index, 1); render(); }
   function addSizeMapping() { sync({ preserveDrafts: true }); current.sizeMappings[uniqueDraftKey('product')] = { [uniqueDraftKey('size')]: '' }; render(); }
   function removeSizeGroup(index) { sync({ preserveDrafts: true }); const key = Object.keys(current.sizeMappings)[index]; delete current.sizeMappings[key]; render(); }

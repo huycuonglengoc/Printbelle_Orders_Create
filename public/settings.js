@@ -10,7 +10,7 @@ async function loadConfig() {
   state.config = await response.json();
   state.catalog = normalizeCatalog(state.config.catalog);
   $('#modeBadge').textContent = state.config.dryRun ? 'DRY-RUN · API not called' : 'LIVE · API enabled';
-  state.editor = createCatalogEditor({ catalog: state.catalog, spuRoot: '#spuEditorRoot', sizeRoot: '#sizeEditorRoot', variantRoot: '#variantEditorRoot', defaultSizeRoot: '#defaultSizeEditorRoot', shippingRoot: '#shippingSettingsRoot' });
+  state.editor = createCatalogEditor({ catalog: state.catalog, spuRoot: '#spuEditorRoot', sizeRoot: '#sizeEditorRoot', variantRoot: '#variantEditorRoot', defaultSizeRoot: '#defaultSizeEditorRoot' });
 }
 
 function sync() { state.catalog = state.editor.sync(); return state.catalog; }

@@ -11,12 +11,41 @@ function totalItemQuantity(order) {
   return (order.items || []).reduce((total, item) => total + Math.max(0, Number(item.quantity) || 0), 0);
 }
 
+function catalogSpuEntry(spu, catalog) {
+  const normalizedSpu = normalizeKey(spu);
+  return (catalog.spus || []).find((entry) => normalizeKey(entry.spu) === normalizedSpu);
+}
+
 function shippingMethodForOrder(order, catalog) {
   const threshold = Number(catalog?.shippingSettings?.bulkThreshold);
   const bulkThreshold = Number.isFinite(threshold) && threshold >= 0 ? threshold : DEFAULT_BULK_SHIPPING_THRESHOLD;
   const bulkMethod = String(catalog?.shippingSettings?.bulkMethod || DEFAULT_BULK_SHIPPING_METHOD).trim() || DEFAULT_BULK_SHIPPING_METHOD;
-  if (totalItemQuantity(order) > bulkThreshold) return bulkMethod;
+  const productGroups = new Map();
+  (order.items || []).forEach((item, index) => {
+    const spu = item.spu || findSpu(item, catalog);
+    const entry = catalogSpuEntry(spu, catalog);
+    if (!entry) return;
+    const key = normalizeKey(spu);
+    const group = productGroups.get(key) || { entry, quantity: 0, index };
+    group.quantity += Math.max(0, Number(item.quantity) || 0);
+    productGroups.set(key, group);
+  });
+  const fastGroup = [...productGroups.values()]
+    .map((group) => {
+      const productThreshold = Number(group.entry.fastShippingThreshold);
+      return {
+        ...group,
+        threshold: Number.isFinite(productThreshold) && productThreshold >= 0 ? Math.floor(productThreshold) : bulkThreshold,
+        fastMethod: String(group.entry.fastShippingMethod || bulkMethod).trim() || bulkMethod
+      };
+    })
+    .filter((group) => group.quantity > group.threshold)
+    .sort((left, right) => right.quantity - left.quantity || left.index - right.index)[0];
+  if (fastGroup) return fastGroup.fastMethod;
   if (String(order.countryCode || "US").toUpperCase() !== "US") return INTERNATIONAL_SHIPPING_METHOD;
+  const configuredGroup = [...productGroups.values()].find((group) => String(group.entry.shippingMethod || '').trim());
+  if (configuredGroup) return String(configuredGroup.entry.shippingMethod).trim();
+  if (totalItemQuantity(order) > bulkThreshold) return bulkMethod;
   return order.shippingMethod || DEFAULT_SHIPPING_METHOD;
 }
 

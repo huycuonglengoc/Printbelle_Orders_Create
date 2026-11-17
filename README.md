@@ -30,7 +30,7 @@ SPU hoặc kích thước cũng có thể được sửa trực tiếp trên t�
 
 File export mẫu dùng cột `Product_Spu` cùng `Product_Code`, trong đó `Product_Code` có dạng `SPU-Color/Size`. Trang Settings đọc hai cột này, tách thành các trường SPU, color, size và mã đích, sau đó thêm thành rule. Khi tạo order, app ưu tiên rule có SKU prefix dài hơn và các điều kiện size/color cụ thể hơn; nếu PDF không có size thì một rule duy nhất khớp theo SPU/prefix/color vẫn được dùng để giữ size trong Product_Code. Nếu có nhiều rule size khác nhau mà PDF không cung cấp size, app không tự đoán.
 
-Shipping method cho đơn US mặc định là `STANDARD SHIPPING-USPS`. Trong Settings, có thể chỉnh ngưỡng và shipping method cho đơn lớn; mặc định nếu tổng quantity **lớn hơn 10** thì app dùng `STANDARD SHIPPING(FAST)`. Đơn dưới ngưỡng đi đến quốc gia khác US dùng `STANDARD SHIPPING`.
+Shipping method được cấu hình ngay trong từng Product catalog: `Default shipping method`, `Fast shipping threshold` và `Fast shipping method`. Khi đơn có nhiều item cùng SPU, quantity của SPU đó được cộng lại; nếu lớn hơn threshold của SPU, app dùng fast method của SPU. Nếu đơn có nhiều SPU cùng vượt ngưỡng, app ưu tiên nhóm có quantity lớn hơn. Với đơn dưới ngưỡng đi ngoài US, app luôn dùng `STANDARD SHIPPING`. Product chưa cấu hình sẽ dùng mặc định `STANDARD SHIPPING-USPS` cho US và fallback bulk cũ là `STANDARD SHIPPING(FAST)` khi tổng quantity lớn hơn 10.
 
 ### Quy tắc nhiều artwork
 
